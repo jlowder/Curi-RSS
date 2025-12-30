@@ -1,0 +1,19 @@
+name: curi-rss
+
+services:
+  curi-rss:
+    build: .
+    image: curi-rss:latest
+    container_name: curi-rss
+    network_mode: "host"
+    environment:
+      - NODE_ENV=production
+      - PORT=7016
+    restart: unless-stopped
+    volumes:
+      # Mount volume for SQLite database persistence
+      - rss-data:/app/data
+
+volumes:
+  rss-data:
+    name: rss-data
