@@ -43,9 +43,16 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
         const data = await response.json();
         if (data && Array.isArray(data.feeds)) {
           setFoundFeeds(data.feeds);
+          const numFeeds = data.feeds.length;
+          let description = `Discovered ${numFeeds} feeds.`;
+          if (numFeeds === 0) {
+            description = "No feeds found at this URL.";
+          } else if (numFeeds === 1) {
+            description = "Discovered 1 feed.";
+          }
           toast({
             title: "Success",
-            description: "Feeds discovered successfully.",
+            description,
           });
         } else {
           throw new Error("Invalid data format from server");
