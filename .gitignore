@@ -7,3 +7,5 @@ vite.config.ts.*
 /data
 rss.db
 dev.log
+package-lock.json
+.genkit/
