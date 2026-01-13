@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { FoundFeed } from "@shared/schema";
-import { Copy, Loader2, Eye } from "lucide-react";
+import { Copy, Loader2, Eye, Plus } from "lucide-react";
 
 interface PreviewArticle {
   title: string;
@@ -33,6 +33,30 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
   const [foundFeeds, setFoundFeeds] = useState<FoundFeed[]>([]);
   const [previewArticles, setPreviewArticles] = useState<PreviewArticle[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const queryClient = useQueryClient();
+
+  const addFeedMutation = useMutation({
+    mutationFn: async (data: { url: string; title?: string }) => {
+      return apiRequest("POST", "/api/feeds", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/feeds"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/articles"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/articles/stats"] });
+      onOpenChange(false);
+      toast({
+        title: "Success",
+        description: "RSS feed added successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add RSS feed.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const findFeedsMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -108,6 +132,13 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
     },
   });
 
+  const handleAddFeed = (url: string, title: string) => {
+    addFeedMutation.mutate({
+      url: url.trim(),
+      title: title.trim() || undefined,
+    });
+  };
+
   const handleFindFeeds = () => {
     setFoundFeeds([]);
     setPreviewArticles([]);
@@ -172,6 +203,13 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleCopy(feed.url)}>
                           <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleAddFeed(feed.url, feed.title)}
+                        >
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
