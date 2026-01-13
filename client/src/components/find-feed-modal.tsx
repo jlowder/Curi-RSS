@@ -8,6 +8,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -193,29 +199,64 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
             <div className="space-y-2">
               <Label>Found Feeds</Label>
               <ScrollArea className="h-48 rounded-md border p-4">
-                {foundFeeds.map((feed) => (
-                  <div key={feed.url} className="mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="break-all flex-1 mr-4 font-medium">{feed.url}</span>
-                      <div>
-                        <Button variant="ghost" size="sm" onClick={() => handlePreview(feed.url)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleCopy(feed.url)}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleAddFeed(feed.url, feed.title)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
+                <TooltipProvider>
+                  {foundFeeds.map((feed) => (
+                    <div key={feed.url} className="mb-4">
+                      <div className="flex items-center justify-between">
+                        <span className="break-all flex-1 mr-4 font-medium">
+                          {feed.url}
+                        </span>
+                        <div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePreview(feed.url)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Preview</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopy(feed.url)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Copy</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleAddFeed(feed.url, feed.title)
+                                }
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Add</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       </div>
+                      <p className="text-sm text-gray-400 mt-1">{feed.title}</p>
                     </div>
-                    <p className="text-sm text-gray-400 mt-1">{feed.title}</p>
-                  </div>
-                ))}
+                  ))}
+                </TooltipProvider>
               </ScrollArea>
             </div>
           )}
