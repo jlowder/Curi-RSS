@@ -39,11 +39,15 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
   const [foundFeeds, setFoundFeeds] = useState<FoundFeed[]>([]);
   const [previewArticles, setPreviewArticles] = useState<PreviewArticle[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [addingFeedUrl, setAddingFeedUrl] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const addFeedMutation = useMutation({
     mutationFn: async (data: { url: string; title?: string }) => {
       return apiRequest("POST", "/api/feeds", data);
+    },
+    onMutate: (variables) => {
+      setAddingFeedUrl(variables.url);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/feeds"] });
@@ -61,6 +65,9 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
         description: error.message || "Failed to add RSS feed.",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      setAddingFeedUrl(null);
     },
   });
 
@@ -240,11 +247,16 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                disabled={addingFeedUrl === feed.url}
                                 onClick={() =>
                                   handleAddFeed(feed.url, feed.title)
                                 }
                               >
-                                <Plus className="h-4 w-4" />
+                                {addingFeedUrl === feed.url ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Plus className="h-4 w-4" />
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
