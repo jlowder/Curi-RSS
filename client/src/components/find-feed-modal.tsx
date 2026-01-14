@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { FoundFeed } from "@shared/schema";
-import { Copy, Loader2, Eye } from "lucide-react";
+import { Copy, Loader2, Eye, Plus } from "lucide-react";
 
 interface PreviewArticle {
   title: string;
@@ -33,6 +39,37 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
   const [foundFeeds, setFoundFeeds] = useState<FoundFeed[]>([]);
   const [previewArticles, setPreviewArticles] = useState<PreviewArticle[]>([]);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [addingFeedUrl, setAddingFeedUrl] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const addFeedMutation = useMutation({
+    mutationFn: async (data: { url: string; title?: string }) => {
+      return apiRequest("POST", "/api/feeds", data);
+    },
+    onMutate: (variables) => {
+      setAddingFeedUrl(variables.url);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/feeds"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/articles"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/articles/stats"] });
+      onOpenChange(false);
+      toast({
+        title: "Success",
+        description: "RSS feed added successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add RSS feed.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setAddingFeedUrl(null);
+    },
+  });
 
   const findFeedsMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -108,6 +145,13 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
     },
   });
 
+  const handleAddFeed = (url: string, title: string) => {
+    addFeedMutation.mutate({
+      url: url.trim(),
+      title: title.trim() || undefined,
+    });
+  };
+
   const handleFindFeeds = () => {
     setFoundFeeds([]);
     setPreviewArticles([]);
@@ -162,22 +206,69 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
             <div className="space-y-2">
               <Label>Found Feeds</Label>
               <ScrollArea className="h-48 rounded-md border p-4">
-                {foundFeeds.map((feed) => (
-                  <div key={feed.url} className="mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="break-all flex-1 mr-4 font-medium">{feed.url}</span>
-                      <div>
-                        <Button variant="ghost" size="sm" onClick={() => handlePreview(feed.url)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleCopy(feed.url)}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
+                <TooltipProvider>
+                  {foundFeeds.map((feed) => (
+                    <div key={feed.url} className="mb-4">
+                      <div className="flex items-center justify-between">
+                        <span className="break-all flex-1 mr-4 font-medium">
+                          {feed.url}
+                        </span>
+                        <div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePreview(feed.url)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Preview</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopy(feed.url)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Copy</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={addingFeedUrl === feed.url}
+                                onClick={() =>
+                                  handleAddFeed(feed.url, feed.title)
+                                }
+                              >
+                                {addingFeedUrl === feed.url ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Plus className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Add</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       </div>
+                      <p className="text-sm text-gray-400 mt-1">{feed.title}</p>
                     </div>
-                    <p className="text-sm text-gray-400 mt-1">{feed.title}</p>
-                  </div>
-                ))}
+                  ))}
+                </TooltipProvider>
               </ScrollArea>
             </div>
           )}
