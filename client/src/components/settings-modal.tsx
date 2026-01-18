@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import type { EmailConfig, LlmConfig, PublishingSettings } from "@shared/schema";
@@ -166,13 +167,14 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <Tabs defaultValue="email">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="publishing">Publishing</TabsTrigger>
-              <TabsTrigger value="llm">LLM</TabsTrigger>
-            </TabsList>
-            <TabsContent value="email">
+          <ScrollArea className="max-h-[70vh] px-1">
+            <Tabs defaultValue="email">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="email">Email</TabsTrigger>
+                <TabsTrigger value="publishing">Publishing</TabsTrigger>
+                <TabsTrigger value="llm">LLM</TabsTrigger>
+              </TabsList>
+              <TabsContent value="email">
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -212,7 +214,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="smtpPass">SMTP Password</Label>
-                  <Input id="smtpPass" type="password" value={emailConfig.smtpPass || ""} onChange={handleEmailChange} />
+                  <Input id="smtpPass" type="password" autocomplete="current-password" value={emailConfig.smtpPass || ""} onChange={handleEmailChange} />
                 </div>
               </div>
             </TabsContent>
@@ -255,6 +257,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   <Input
                     id="apiKey"
                     type="password"
+                    autocomplete="current-password"
                     value={llmConfig.apiKey || ""}
                     onChange={handleLlmChange}
                     placeholder={llmConfig.hasApiKey ? "••••••••" : "Enter API Key"}
@@ -308,7 +311,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </div>
             </TabsContent>
           </Tabs>
-          <DialogFooter>
+          </ScrollArea>
+          <DialogFooter className="mt-4">
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
