@@ -8,7 +8,7 @@ import fs from "fs/promises";
 import path from "path";
 import { insertFeedSchema, updateArticleSchema, updateFeedSchema, emailConfigSchema, llmConfigSchema, publishingSettingsSchema, publishQueueSchema, type Article } from "@shared/schema";
 import Parser from "rss-parser";
-import fetch, { Headers } from "node-fetch";
+import fetch from "node-fetch";
 import keytar from "keytar";
 import * as cheerio from "cheerio";
 import puppeteer from "puppeteer";
@@ -797,11 +797,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const config = llmConfigSchema.parse(req.body);
 
-      if (config.apiKey) {
+      if (config.apiKey !== undefined) {
         try {
-          await keytar.setPassword("curirss", "llm_api_key", config.apiKey);
+          if (config.apiKey === "") {
+            await keytar.deletePassword("curirss", "llm_api_key");
+          } else {
+            await keytar.setPassword("curirss", "llm_api_key", config.apiKey);
+          }
         } catch (keytarError) {
-          console.warn("Keytar failed to set password:", keytarError);
+          console.warn("Keytar failed to update password:", keytarError);
         }
       }
 
@@ -934,7 +938,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
-      const apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      let apiKey = null;
+      try {
+        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      } catch (keytarError) {
+        console.warn("Keytar failed to retrieve password for LLM request:", keytarError);
+      }
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (apiKey) {
         headers["Authorization"] = `Bearer ${apiKey}`;
@@ -991,7 +1000,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
-      const apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      let apiKey = null;
+      try {
+        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      } catch (keytarError) {
+        console.warn("Keytar failed to retrieve password for LLM request:", keytarError);
+      }
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (apiKey) {
         headers["Authorization"] = `Bearer ${apiKey}`;
