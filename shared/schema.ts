@@ -109,6 +109,8 @@ export const emailConfigSchema = z.object({
 export const llmConfigSchema = z.object({
   enabled: z.boolean().default(true),
   endpoint: z.string().url().or(z.literal("")).optional(),
+  apiKey: z.string().optional(),
+  hasApiKey: z.boolean().optional(),
   prompt: z.string().optional(),
   additionalInfoPrompt: z.string().optional(),
   deepResearchPrompt: z.string().optional(),

@@ -8,7 +8,8 @@ import fs from "fs/promises";
 import path from "path";
 import { insertFeedSchema, updateArticleSchema, updateFeedSchema, emailConfigSchema, llmConfigSchema, publishingSettingsSchema, publishQueueSchema, type Article } from "@shared/schema";
 import Parser from "rss-parser";
-import fetch from "node-fetch";
+import fetch, { Headers } from "node-fetch";
+import keytar from "keytar";
 import * as cheerio from "cheerio";
 import puppeteer from "puppeteer";
 import { PDFDocument } from "pdf-lib";
@@ -776,8 +777,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/settings/llm-config", async (req, res) => {
     try {
       const config = await storage.getLlmConfig();
-      res.json(config);
+      let apiKey = null;
+      try {
+        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      } catch (keytarError) {
+        console.warn("Keytar failed to retrieve password:", keytarError);
+      }
+      res.json({
+        ...config,
+        hasApiKey: !!apiKey
+      });
     } catch (error) {
+      console.error("Failed to get LLM config:", error);
       res.status(500).json({ error: "Failed to get LLM settings" });
     }
   });
@@ -785,7 +796,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/settings/llm-config", async (req, res) => {
     try {
       const config = llmConfigSchema.parse(req.body);
-      for (const [key, value] of Object.entries(config)) {
+
+      if (config.apiKey) {
+        try {
+          await keytar.setPassword("curirss", "llm_api_key", config.apiKey);
+        } catch (keytarError) {
+          console.warn("Keytar failed to set password:", keytarError);
+        }
+      }
+
+      // Remove sensitive data before saving to DB
+      const { apiKey, hasApiKey, ...safeConfig } = config;
+
+      for (const [key, value] of Object.entries(safeConfig)) {
         if (value !== undefined && value !== null) {
           await storage.setSetting(`llm_${key}`, String(value));
         }
@@ -848,9 +871,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
+      let apiKey = null;
+      try {
+        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      } catch (keytarError) {
+        console.warn("Keytar failed to retrieve password for LLM request:", keytarError);
+      }
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
       const llmResponse = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo", // This can be anything, the local LLM will ignore it
           messages: [{ role: "user", content: prompt }],
@@ -900,9 +934,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
+      const apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
       const llmResponse = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
@@ -951,9 +991,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
+      const apiKey = await keytar.getPassword("curirss", "llm_api_key");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
       const llmResponse = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],

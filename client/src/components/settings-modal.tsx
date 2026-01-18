@@ -245,6 +245,21 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 <Input id="endpoint" value={llmConfig.endpoint || ""} onChange={handleLlmChange} placeholder="http://localhost:8000/v1/chat/completions" />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="apiKey">LLM API Key (Optional)</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  value={llmConfig.apiKey || ""}
+                  onChange={handleLlmChange}
+                  placeholder={llmConfig.hasApiKey ? "••••••••" : "Enter API Key"}
+                />
+                {llmConfig.hasApiKey && (
+                  <p className="text-xs text-muted-foreground">
+                    An API key is already stored. Enter a new one to overwrite it.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="prompt">Summarization Prompt</Label>
                 <Textarea
                   id="prompt"
