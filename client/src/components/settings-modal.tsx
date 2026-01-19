@@ -15,6 +15,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import type { EmailConfig, LlmConfig, PublishingSettings } from "@shared/schema";
@@ -167,7 +173,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <ScrollArea className="max-h-[70vh] px-1">
+          <ScrollArea className="max-h-[60vh] px-1">
             <Tabs defaultValue="email">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="email">Email</TabsTrigger>
@@ -248,66 +254,100 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   <Checkbox id="enabled" checked={llmConfig.enabled} onCheckedChange={(checked) => handleLlmBooleanChange('enabled', !!checked)} />
                   <Label htmlFor="enabled">Enable AI Features</Label>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endpoint">LLM API Endpoint</Label>
-                  <Input id="endpoint" value={llmConfig.endpoint || ""} onChange={handleLlmChange} placeholder="http://localhost:8000/v1/chat/completions" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="apiKey">LLM API Key (Optional)</Label>
-                  <Input
-                    id="apiKey"
-                    type="password"
-                    autocomplete="current-password"
-                    value={llmConfig.apiKey || ""}
-                    onChange={handleLlmChange}
-                    placeholder={llmConfig.hasApiKey ? "••••••••" : "Enter API Key"}
-                  />
-                  {llmConfig.hasApiKey && (
-                    <p className="text-xs text-muted-foreground">
-                      An API key is already stored. Enter a new one to overwrite it.
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prompt">Summarization Prompt</Label>
-                  <Textarea
-                    id="prompt"
-                    value={llmConfig.prompt || ""}
-                    onChange={handleLlmChange}
-                    rows={6}
-                    placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="additionalInfoPrompt">Additional Information Prompt</Label>
-                  <Textarea
-                    id="additionalInfoPrompt"
-                    value={llmConfig.additionalInfoPrompt || ""}
-                    onChange={handleLlmChange}
-                    rows={6}
-                    placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deepResearchPrompt">Deep Research Prompt</Label>
-                  <Textarea
-                    id="deepResearchPrompt"
-                    value={llmConfig.deepResearchPrompt || ""}
-                    onChange={handleLlmChange}
-                    rows={6}
-                    placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="max_tokens">Max Tokens</Label>
-                    <Input id="max_tokens" type="number" value={llmConfig.max_tokens || ""} onChange={handleLlmChange} placeholder="150" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="temperature">Temperature</Label>
-                    <Input id="temperature" type="number" step="0.1" value={llmConfig.temperature || ""} onChange={handleLlmChange} placeholder="0.7" />
-                  </div>
-                </div>
+
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="connection">
+                  <AccordionTrigger>Connection Settings</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="endpoint">LLM API Endpoint</Label>
+                        <Input id="endpoint" value={llmConfig.endpoint || ""} onChange={handleLlmChange} placeholder="http://localhost:8000/v1/chat/completions" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="apiKey">LLM API Key (Optional)</Label>
+                        <Input
+                          id="apiKey"
+                          type="password"
+                          autocomplete="current-password"
+                          value={llmConfig.apiKey || ""}
+                          onChange={handleLlmChange}
+                          placeholder={llmConfig.hasApiKey ? "••••••••" : "Enter API Key"}
+                        />
+                        {llmConfig.hasApiKey && (
+                          <p className="text-xs text-muted-foreground">
+                            An API key is already stored. Enter a new one to overwrite it.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="prompt">
+                  <AccordionTrigger>Summarization Prompt</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2">
+                      <Label htmlFor="prompt">Prompt Template</Label>
+                      <Textarea
+                        id="prompt"
+                        value={llmConfig.prompt || ""}
+                        onChange={handleLlmChange}
+                        rows={6}
+                        placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="additionalInfo">
+                  <AccordionTrigger>Additional Information Prompt</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2">
+                      <Label htmlFor="additionalInfoPrompt">Prompt Template</Label>
+                      <Textarea
+                        id="additionalInfoPrompt"
+                        value={llmConfig.additionalInfoPrompt || ""}
+                        onChange={handleLlmChange}
+                        rows={6}
+                        placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="deepResearch">
+                  <AccordionTrigger>Deep Research Prompt</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2">
+                      <Label htmlFor="deepResearchPrompt">Prompt Template</Label>
+                      <Textarea
+                        id="deepResearchPrompt"
+                        value={llmConfig.deepResearchPrompt || ""}
+                        onChange={handleLlmChange}
+                        rows={6}
+                        placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="parameters">
+                  <AccordionTrigger>Model Parameters</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="max_tokens">Max Tokens</Label>
+                        <Input id="max_tokens" type="number" value={llmConfig.max_tokens || ""} onChange={handleLlmChange} placeholder="150" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="temperature">Temperature</Label>
+                        <Input id="temperature" type="number" step="0.1" value={llmConfig.temperature || ""} onChange={handleLlmChange} placeholder="0.7" />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
               </div>
             </TabsContent>
           </Tabs>
