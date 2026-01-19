@@ -1,7 +1,17 @@
 # Stage 1: Build dependencies and app
 FROM node:20-slim as builder
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ calibre msmtp sendmail && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    libsecret-1-dev \
+    pkg-config \
+    libglib2.0-dev \
+    calibre \
+    msmtp \
+    sendmail \
+    && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
 ENV PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
 RUN npm ci
@@ -20,6 +30,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
+    libsecret-1-0 \
+    gnome-keyring \
+    dbus-x11 \
     calibre \
     msmtp \
     sendmail \
@@ -66,8 +79,10 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 --gid 100
 # Create the data directory in the final image
 RUN mkdir -p /app/data && chown appuser:nodejs /app/data
 
+USER root
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 USER appuser
-
 
 # Copy over the built app and production dependencies with the correct ownership
 COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
@@ -82,6 +97,8 @@ EXPOSE 7016
 ENV PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
 ENV NODE_ENV=production
 ENV PORT=7016
+ENV XDG_DATA_HOME=/app/data/xdg
 
 # Start the application
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "dist/start-prod.js"]
