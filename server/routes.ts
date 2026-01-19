@@ -916,7 +916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestBody = {
         model: llmConfig.llmModel || "gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 750,
+        max_tokens: llmConfig.max_tokens || 2000,
         temperature: llmConfig.temperature || 0.7,
       };
 
@@ -960,11 +960,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const summary = llmResult.choices?.[0]?.message?.content;
+      const finishReason = llmResult.choices?.[0]?.finish_reason;
 
       if (!summary) {
         console.error(`Unexpected LLM response structure:`, JSON.stringify(llmResult));
         throw new Error("Failed to extract summary from LLM response. Check server logs for response structure.");
       }
+
+      console.log(`LLM Summarization complete. Length: ${summary.length} chars. Finish reason: ${finishReason}`);
 
       res.json({ summary });
     } catch (error: any) {
@@ -1002,7 +1005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const promptTemplate = llmConfig.additionalInfoPrompt || "Analyze the following article and provide two lists in markdown format. First, a list of prominent people, organizations, or products mentioned. Second, a list of suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings.\n\nArticle Text:\n{article_text}";
+      const promptTemplate = llmConfig.additionalInfoPrompt || "Analyze the following article and provide two lists in markdown format. First, a list of prominent people, organizations, or products mentioned. Second, a list of suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings. Do not repeat the article text.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
@@ -1016,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestBody = {
         model: llmConfig.llmModel || "gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 400,
+        max_tokens: llmConfig.max_tokens || 2000,
         temperature: llmConfig.temperature || 0.7,
       };
 
@@ -1060,11 +1063,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const additionalInfo = llmResult.choices?.[0]?.message?.content;
+      const finishReason = llmResult.choices?.[0]?.finish_reason;
 
       if (!additionalInfo) {
         console.error(`Unexpected LLM response structure:`, JSON.stringify(llmResult));
         throw new Error("Failed to extract additional info from LLM response. Check server logs for response structure.");
       }
+
+      console.log(`LLM Additional Info complete. Length: ${additionalInfo.length} chars. Finish reason: ${finishReason}`);
 
       res.json({ additionalInfo });
     } catch (error: any) {
@@ -1102,7 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const promptTemplate = llmConfig.deepResearchPrompt || "Based on the following article, generate a list of 5 thought-provoking prompts for deep research. The prompts should be suitable for a researcher or journalist to use as a starting point for a detailed investigation. The response should be a markdown-formatted list of these 5 prompts and nothing else.\n\nArticle Text:\n{article_text}";
+      const promptTemplate = llmConfig.deepResearchPrompt || "Based on the following article, generate a list of 5 thought-provoking prompts for deep research. The prompts should be suitable for a researcher or journalist to use as a starting point for a detailed investigation. The response should be a markdown-formatted list of these 5 prompts and nothing else. Do not repeat the article text.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
@@ -1116,7 +1122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestBody = {
         model: llmConfig.llmModel || "gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 600,
+        max_tokens: llmConfig.max_tokens || 2000,
         temperature: llmConfig.temperature || 0.8,
       };
 
@@ -1160,11 +1166,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const deepResearch = llmResult.choices?.[0]?.message?.content;
+      const finishReason = llmResult.choices?.[0]?.finish_reason;
 
       if (!deepResearch) {
         console.error(`Unexpected LLM response structure:`, JSON.stringify(llmResult));
         throw new Error("Failed to extract deep research from LLM response. Check server logs for response structure.");
       }
+
+      console.log(`LLM Deep Research complete. Length: ${deepResearch.length} chars. Finish reason: ${finishReason}`);
 
       res.json({ deepResearch });
     } catch (error: any) {
