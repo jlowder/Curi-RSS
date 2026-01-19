@@ -229,7 +229,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="smtpPass">SMTP Password</Label>
-                  <Input id="smtpPass" type="password" autocomplete="current-password" value={emailConfig.smtpPass || ""} onChange={handleEmailChange} />
+                  <Input id="smtpPass" type="password" autoComplete="current-password" value={emailConfig.smtpPass || ""} onChange={handleEmailChange} />
                 </div>
               </div>
             </TabsContent>
@@ -278,7 +278,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         <Input
                           id="apiKey"
                           type="password"
-                          autocomplete="current-password"
+                          autoComplete="current-password"
                           value={llmConfig.apiKey || ""}
                           onChange={handleLlmChange}
                           placeholder={llmConfig.hasApiKey ? "••••••••" : "Enter API Key"}
@@ -286,6 +286,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         {llmConfig.hasApiKey && (
                           <p className="text-xs text-muted-foreground">
                             An API key is already stored. Enter a new one to overwrite it.
+                          </p>
+                        )}
+                        {llmConfig.keyringError && (
+                          <p className="text-xs text-destructive">
+                            Keyring Error: {llmConfig.keyringError}
                           </p>
                         )}
                       </div>
