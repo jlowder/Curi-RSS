@@ -9,6 +9,7 @@ import path from "path";
 import { insertFeedSchema, updateArticleSchema, updateFeedSchema, emailConfigSchema, llmConfigSchema, publishingSettingsSchema, publishQueueSchema, type Article } from "@shared/schema";
 import Parser from "rss-parser";
 import fetch from "node-fetch";
+import keytar from "keytar";
 import * as cheerio from "cheerio";
 import puppeteer from "puppeteer";
 import { PDFDocument } from "pdf-lib";
@@ -16,6 +17,23 @@ import TurndownService from "turndown";
 
 const parser = new Parser();
 const turndownService = new TurndownService();
+
+const KEYTAR_SERVICE = "curirss";
+const KEYTAR_ACCOUNT = "llm_api_key";
+
+async function getLlmApiKey(): Promise<string | null> {
+  try {
+    const key = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
+    return key;
+  } catch (error: any) {
+    let message = error.message || String(error);
+    if (message.includes("D-Bus") || message.includes("$DISPLAY") || message.includes("secret_service_search_items_sync")) {
+      message += ". On Linux, ensure the server has access to a D-Bus session (e.g. run with dbus-run-session).";
+    }
+    console.error("Keyring access failed:", message);
+    return null;
+  }
+}
 
 function cleanDescription(html: string | null | undefined): string {
   if (!html) {
@@ -719,22 +737,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete feed
-  app.delete("/api/feeds/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const deleted = await storage.deleteFeed(id);
-      
-      if (!deleted) {
-        return res.status(404).json({ error: "Feed not found" });
-      }
-      
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete feed" });
-    }
-  });
-
   // Settings routes
   app.get("/api/settings/email-config", async (req, res) => {
     try {
@@ -776,8 +778,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/settings/llm-config", async (req, res) => {
     try {
       const config = await storage.getLlmConfig();
-      res.json(config);
+      let hasApiKey = false;
+      let keyringError: string | undefined = undefined;
+      try {
+        const apiKey = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
+        hasApiKey = !!apiKey;
+      } catch (keytarErrorObj: any) {
+        keyringError = keytarErrorObj.message || String(keytarErrorObj);
+        if (keyringError.includes("D-Bus") || keyringError.includes("$DISPLAY") || keyringError.includes("secret_service_search_items_sync")) {
+          keyringError += ". On Linux, ensure the server has access to a D-Bus session (e.g. run with dbus-run-session).";
+        }
+        console.error("Keytar failed to check for API key:", keyringError);
+      }
+
+      res.json({
+        ...config,
+        hasApiKey,
+        keyringError
+      });
     } catch (error) {
+      console.error("Failed to get LLM config:", error);
       res.status(500).json({ error: "Failed to get LLM settings" });
     }
   });
@@ -785,7 +805,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/settings/llm-config", async (req, res) => {
     try {
       const config = llmConfigSchema.parse(req.body);
-      for (const [key, value] of Object.entries(config)) {
+
+      if (config.apiKey !== undefined) {
+        try {
+          if (config.apiKey === "") {
+            console.log("Deleting LLM API key from keyring");
+            await keytar.deletePassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
+          } else {
+            console.log("Setting LLM API key in keyring");
+            await keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, config.apiKey);
+            // Verify it was set
+            const verification = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
+            if (verification === config.apiKey) {
+              console.log("LLM API key verified in keyring");
+            } else {
+              console.warn("LLM API key verification failed - retrieved value does not match");
+            }
+          }
+        } catch (keytarError: any) {
+          let message = keytarError.message || String(keytarError);
+          if (message.includes("D-Bus") || message.includes("$DISPLAY")) {
+            message += ". On Linux, ensure the server has access to a D-Bus session (e.g. run with dbus-run-session).";
+          }
+          console.error("Keytar failed to update password:", message);
+          return res.status(500).json({ error: `Keyring error: ${message}` });
+        }
+      }
+
+      // Remove sensitive data before saving to DB
+      const { apiKey, hasApiKey, keyringError, ...safeConfig } = config;
+
+      for (const [key, value] of Object.entries(safeConfig)) {
         if (value !== undefined && value !== null) {
           await storage.setSetting(`llm_${key}`, String(value));
         }
@@ -848,9 +898,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
+      const apiKey = await getLlmApiKey();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
       const llmResponse = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo", // This can be anything, the local LLM will ignore it
           messages: [{ role: "user", content: prompt }],
@@ -900,9 +956,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
+      const apiKey = await getLlmApiKey();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
       const llmResponse = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
@@ -951,9 +1013,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plainTextContent = cheerio.load(article.content).text();
       const prompt = promptTemplate.replace("{article_text}", plainTextContent);
 
+      const apiKey = await getLlmApiKey();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
       const llmResponse = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
