@@ -105,10 +105,10 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       });
       onOpenChange(false);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to update LLM settings",
+        description: error.message || "Failed to update LLM settings",
         variant: "destructive",
       });
     },

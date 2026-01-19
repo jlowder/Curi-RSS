@@ -18,6 +18,9 @@ import TurndownService from "turndown";
 const parser = new Parser();
 const turndownService = new TurndownService();
 
+const KEYTAR_SERVICE = "curirss";
+const KEYTAR_ACCOUNT = "llm_api_key";
+
 function cleanDescription(html: string | null | undefined): string {
   if (!html) {
     return "";
@@ -779,7 +782,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const config = await storage.getLlmConfig();
       let apiKey = null;
       try {
-        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+        apiKey = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
       } catch (keytarError) {
         console.warn("Keytar failed to retrieve password:", keytarError);
       }
@@ -800,12 +803,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (config.apiKey !== undefined) {
         try {
           if (config.apiKey === "") {
-            await keytar.deletePassword("curirss", "llm_api_key");
+            await keytar.deletePassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
           } else {
-            await keytar.setPassword("curirss", "llm_api_key", config.apiKey);
+            await keytar.setPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT, config.apiKey);
           }
-        } catch (keytarError) {
-          console.warn("Keytar failed to update password:", keytarError);
+        } catch (keytarError: any) {
+          console.error("Keytar failed to update password:", keytarError);
+          return res.status(500).json({ error: `Keyring error: ${keytarError.message}` });
         }
       }
 
@@ -877,7 +881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let apiKey = null;
       try {
-        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+        apiKey = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
       } catch (keytarError) {
         console.warn("Keytar failed to retrieve password for LLM request:", keytarError);
       }
@@ -940,7 +944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let apiKey = null;
       try {
-        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+        apiKey = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
       } catch (keytarError) {
         console.warn("Keytar failed to retrieve password for LLM request:", keytarError);
       }
@@ -1002,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let apiKey = null;
       try {
-        apiKey = await keytar.getPassword("curirss", "llm_api_key");
+        apiKey = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
       } catch (keytarError) {
         console.warn("Keytar failed to retrieve password for LLM request:", keytarError);
       }
