@@ -892,7 +892,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const llmConfig = await storage.getLlmConfig();
-      const endpoint = llmConfig.endpoint || "http://localhost:8000/v1/chat/completions";
+      let endpoint = llmConfig.endpoint || "http://localhost:8000/v1/chat/completions";
+
+      // If the endpoint is a base URL, append /chat/completions
+      if (endpoint.endsWith('/v1') || endpoint.endsWith('/v1/') || endpoint.includes('googleapis.com') && !endpoint.includes('/chat/completions')) {
+        const baseEndpoint = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+        if (!baseEndpoint.endsWith('/chat/completions')) {
+          endpoint = `${baseEndpoint}/chat/completions`;
+        }
+      }
+
       const promptTemplate = llmConfig.prompt || "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();
@@ -983,7 +992,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const llmConfig = await storage.getLlmConfig();
-      const endpoint = llmConfig.endpoint || "http://localhost:8000/v1/chat/completions";
+      let endpoint = llmConfig.endpoint || "http://localhost:8000/v1/chat/completions";
+
+      // If the endpoint is a base URL, append /chat/completions
+      if (endpoint.endsWith('/v1') || endpoint.endsWith('/v1/') || endpoint.includes('googleapis.com') && !endpoint.includes('/chat/completions')) {
+        const baseEndpoint = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+        if (!baseEndpoint.endsWith('/chat/completions')) {
+          endpoint = `${baseEndpoint}/chat/completions`;
+        }
+      }
+
       const promptTemplate = llmConfig.additionalInfoPrompt || "Analyze the following article and provide two lists in markdown format. First, a list of prominent people, organizations, or products mentioned. Second, a list of suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();
@@ -1074,7 +1092,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const llmConfig = await storage.getLlmConfig();
-      const endpoint = llmConfig.endpoint || "http://localhost:8000/v1/chat/completions";
+      let endpoint = llmConfig.endpoint || "http://localhost:8000/v1/chat/completions";
+
+      // If the endpoint is a base URL, append /chat/completions
+      if (endpoint.endsWith('/v1') || endpoint.endsWith('/v1/') || endpoint.includes('googleapis.com') && !endpoint.includes('/chat/completions')) {
+        const baseEndpoint = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+        if (!baseEndpoint.endsWith('/chat/completions')) {
+          endpoint = `${baseEndpoint}/chat/completions`;
+        }
+      }
+
       const promptTemplate = llmConfig.deepResearchPrompt || "Based on the following article, generate a list of 5 thought-provoking prompts for deep research. The prompts should be suitable for a researcher or journalist to use as a starting point for a detailed investigation. The response should be a markdown-formatted list of these 5 prompts and nothing else.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();

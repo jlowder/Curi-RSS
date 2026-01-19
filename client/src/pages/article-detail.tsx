@@ -99,13 +99,21 @@ export default function ArticleDetail({}: ArticleDetailProps) {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Failed to summarize article");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || "Failed to summarize article");
       }
       return response.json();
     },
     onSuccess: (data) => {
       setSummary(data.summary);
     },
+    onError: (error: Error) => {
+      toast({
+        title: "AI Summarization Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   const referencedInfoMutation = useMutation({
@@ -114,13 +122,21 @@ export default function ArticleDetail({}: ArticleDetailProps) {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Failed to get referenced info");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || "Failed to get referenced info");
       }
       return response.json();
     },
     onSuccess: (data) => {
       setReferencedInfo(data.additionalInfo);
     },
+    onError: (error: Error) => {
+      toast({
+        title: "AI Info Extraction Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   const deepResearchMutation = useMutation({
@@ -129,13 +145,21 @@ export default function ArticleDetail({}: ArticleDetailProps) {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Failed to get deep research");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || "Failed to get deep research");
       }
       return response.json();
     },
     onSuccess: (data) => {
       setDeepResearch(data.deepResearch);
     },
+    onError: (error: Error) => {
+      toast({
+        title: "AI Deep Research Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   // Mark article as read after viewing for a few seconds (if not already read)
