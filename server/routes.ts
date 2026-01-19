@@ -905,7 +905,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const promptTemplate = llmConfig.prompt || "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();
-      const prompt = promptTemplate.replace("{article_text}", plainTextContent);
+      const truncatedContent = plainTextContent.length > 40000 ? plainTextContent.slice(0, 40000) + "... [truncated]" : plainTextContent;
+      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
 
       const apiKey = await getLlmApiKey();
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -916,7 +917,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestBody = {
         model: llmConfig.llmModel || "gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 2000,
+        max_tokens: llmConfig.max_tokens || 4000,
         temperature: llmConfig.temperature || 0.7,
       };
 
@@ -968,6 +969,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`LLM Summarization complete. Length: ${summary.length} chars. Finish reason: ${finishReason}`);
+      if (summary.length > 0) {
+        console.log(`Response start: ${summary.substring(0, 100).replace(/\n/g, ' ')}...`);
+      }
 
       res.json({ summary });
     } catch (error: any) {
@@ -1005,10 +1009,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const promptTemplate = llmConfig.additionalInfoPrompt || "Analyze the following article and provide two lists in markdown format. First, a list of prominent people, organizations, or products mentioned. Second, a list of suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings. Do not repeat the article text.\n\nArticle Text:\n{article_text}";
+      const promptTemplate = llmConfig.additionalInfoPrompt || "Analyze the following article and provide two lists in markdown format. First, a concise list of the most prominent people, organizations, or products mentioned (limit to top 10). Second, a list of 3-5 suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings. DO NOT repeat the article text and DO NOT be overly verbose.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();
-      const prompt = promptTemplate.replace("{article_text}", plainTextContent);
+      const truncatedContent = plainTextContent.length > 40000 ? plainTextContent.slice(0, 40000) + "... [truncated]" : plainTextContent;
+      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
 
       const apiKey = await getLlmApiKey();
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1019,7 +1024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestBody = {
         model: llmConfig.llmModel || "gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 2000,
+        max_tokens: llmConfig.max_tokens || 4000,
         temperature: llmConfig.temperature || 0.7,
       };
 
@@ -1071,6 +1076,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`LLM Additional Info complete. Length: ${additionalInfo.length} chars. Finish reason: ${finishReason}`);
+      if (additionalInfo.length > 0) {
+        console.log(`Response start: ${additionalInfo.substring(0, 100).replace(/\n/g, ' ')}...`);
+      }
 
       res.json({ additionalInfo });
     } catch (error: any) {
@@ -1111,7 +1119,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const promptTemplate = llmConfig.deepResearchPrompt || "Based on the following article, generate a list of 5 thought-provoking prompts for deep research. The prompts should be suitable for a researcher or journalist to use as a starting point for a detailed investigation. The response should be a markdown-formatted list of these 5 prompts and nothing else. Do not repeat the article text.\n\nArticle Text:\n{article_text}";
 
       const plainTextContent = cheerio.load(article.content).text();
-      const prompt = promptTemplate.replace("{article_text}", plainTextContent);
+      const truncatedContent = plainTextContent.length > 40000 ? plainTextContent.slice(0, 40000) + "... [truncated]" : plainTextContent;
+      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
 
       const apiKey = await getLlmApiKey();
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1122,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestBody = {
         model: llmConfig.llmModel || "gpt-3.5-turbo",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 2000,
+        max_tokens: llmConfig.max_tokens || 4000,
         temperature: llmConfig.temperature || 0.8,
       };
 
@@ -1174,6 +1183,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`LLM Deep Research complete. Length: ${deepResearch.length} chars. Finish reason: ${finishReason}`);
+      if (deepResearch.length > 0) {
+        console.log(`Response start: ${deepResearch.substring(0, 100).replace(/\n/g, ' ')}...`);
+      }
 
       res.json({ deepResearch });
     } catch (error: any) {
