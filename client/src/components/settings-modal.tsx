@@ -294,6 +294,15 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                           </p>
                         )}
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="llmModel">Preferred Model (Optional)</Label>
+                        <Input
+                          id="llmModel"
+                          value={llmConfig.llmModel || ""}
+                          onChange={handleLlmChange}
+                          placeholder="e.g. gpt-3.5-turbo, gemini-1.5-flash"
+                        />
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>

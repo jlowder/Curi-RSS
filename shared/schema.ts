@@ -112,6 +112,7 @@ export const llmConfigSchema = z.object({
   apiKey: z.string().optional(),
   hasApiKey: z.boolean().optional(),
   keyringError: z.string().optional(),
+  llmModel: z.string().optional(),
   prompt: z.string().optional(),
   additionalInfoPrompt: z.string().optional(),
   deepResearchPrompt: z.string().optional(),

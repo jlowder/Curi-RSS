@@ -749,7 +749,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLlmConfig(): Promise<LlmConfig> {
-    const keys = ["enabled", "endpoint", "prompt", "additionalInfoPrompt", "deepResearchPrompt", "max_tokens", "temperature"];
+    const keys = ["enabled", "endpoint", "prompt", "additionalInfoPrompt", "deepResearchPrompt", "max_tokens", "temperature", "llmModel"];
     const settingsList = await Promise.all(keys.map(key => this.getSetting(`llm_${key}`)));
     return {
       enabled: settingsList[0] === undefined ? true : settingsList[0] === 'true',
@@ -759,6 +759,7 @@ export class DatabaseStorage implements IStorage {
       deepResearchPrompt: settingsList[4] ?? undefined,
       max_tokens: settingsList[5] ? parseInt(settingsList[5], 10) : undefined,
       temperature: settingsList[6] ? parseFloat(settingsList[6]) : undefined,
+      llmModel: settingsList[7] ?? undefined,
     };
   }
 }
