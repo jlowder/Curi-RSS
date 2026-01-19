@@ -904,16 +904,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers["Authorization"] = `Bearer ${apiKey}`;
       }
 
-      const llmResponse = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: llmConfig.llmModel || "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: llmConfig.max_tokens || 750,
-          temperature: llmConfig.temperature || 0.7,
-        }),
+      const requestBody = {
+        model: llmConfig.llmModel || "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: llmConfig.max_tokens || 750,
+        temperature: llmConfig.temperature || 0.7,
+      };
+
+      console.log(`Sending LLM Summarization request to ${endpoint}`, {
+        model: requestBody.model,
+        max_tokens: requestBody.max_tokens,
+        temperature: requestBody.temperature,
+        hasApiKey: !!apiKey
       });
+
+      let llmResponse;
+      try {
+        llmResponse = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(requestBody),
+        });
+      } catch (fetchError: any) {
+        console.error(`Fetch error during LLM Summarization:`, fetchError);
+        throw new Error(`Failed to connect to LLM endpoint: ${fetchError.message}`);
+      }
 
       if (!llmResponse.ok) {
         const errorBody = await llmResponse.text();
@@ -921,23 +936,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: llmResponse.status,
           statusText: llmResponse.statusText,
           endpoint,
-          model: llmConfig.llmModel || "gpt-3.5-turbo",
+          model: requestBody.model,
           errorBody
         });
         throw new Error(`LLM API request failed with status ${llmResponse.status}: ${errorBody}`);
       }
 
-      const llmResult = await llmResponse.json() as { choices: { message: { content: string } }[] };
-      const summary = llmResult.choices[0]?.message?.content;
+      let llmResult;
+      try {
+        llmResult = await llmResponse.json() as any;
+      } catch (parseError: any) {
+        console.error(`Failed to parse LLM response as JSON:`, parseError);
+        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
+      }
+
+      const summary = llmResult.choices?.[0]?.message?.content;
 
       if (!summary) {
-        throw new Error("Failed to extract summary from LLM response");
+        console.error(`Unexpected LLM response structure:`, JSON.stringify(llmResult));
+        throw new Error("Failed to extract summary from LLM response. Check server logs for response structure.");
       }
 
       res.json({ summary });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Summarization error:", error);
-      res.status(500).json({ error: "Failed to summarize article" });
+      res.status(500).json({
+        error: "Failed to summarize article",
+        details: error.message
+      });
     }
   });
 
@@ -969,16 +995,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers["Authorization"] = `Bearer ${apiKey}`;
       }
 
-      const llmResponse = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: llmConfig.llmModel || "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }],
-	  max_tokens: llmConfig.max_tokens || 400,
-          temperature: llmConfig.temperature || 0.7,
-        }),
+      const requestBody = {
+        model: llmConfig.llmModel || "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: llmConfig.max_tokens || 400,
+        temperature: llmConfig.temperature || 0.7,
+      };
+
+      console.log(`Sending LLM Additional Info request to ${endpoint}`, {
+        model: requestBody.model,
+        max_tokens: requestBody.max_tokens,
+        temperature: requestBody.temperature,
+        hasApiKey: !!apiKey
       });
+
+      let llmResponse;
+      try {
+        llmResponse = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(requestBody),
+        });
+      } catch (fetchError: any) {
+        console.error(`Fetch error during LLM Additional Info:`, fetchError);
+        throw new Error(`Failed to connect to LLM endpoint: ${fetchError.message}`);
+      }
 
       if (!llmResponse.ok) {
         const errorBody = await llmResponse.text();
@@ -986,23 +1027,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: llmResponse.status,
           statusText: llmResponse.statusText,
           endpoint,
-          model: llmConfig.llmModel || "gpt-3.5-turbo",
+          model: requestBody.model,
           errorBody
         });
-        throw new Error(`LLM API request failed: ${llmResponse.statusText} - ${errorBody}`);
+        throw new Error(`LLM API request failed with status ${llmResponse.status}: ${errorBody}`);
       }
 
-      const llmResult = await llmResponse.json() as { choices: { message: { content: string } }[] };
-      const additionalInfo = llmResult.choices[0]?.message?.content;
+      let llmResult;
+      try {
+        llmResult = await llmResponse.json() as any;
+      } catch (parseError: any) {
+        console.error(`Failed to parse LLM response as JSON:`, parseError);
+        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
+      }
+
+      const additionalInfo = llmResult.choices?.[0]?.message?.content;
 
       if (!additionalInfo) {
-        throw new Error("Failed to extract additional info from LLM response");
+        console.error(`Unexpected LLM response structure:`, JSON.stringify(llmResult));
+        throw new Error("Failed to extract additional info from LLM response. Check server logs for response structure.");
       }
 
       res.json({ additionalInfo });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Additional info error:", error);
-      res.status(500).json({ error: "Failed to get additional info" });
+      res.status(500).json({
+        error: "Failed to get additional info",
+        details: error.message
+      });
     }
   });
 
@@ -1034,16 +1086,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers["Authorization"] = `Bearer ${apiKey}`;
       }
 
-      const llmResponse = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: llmConfig.llmModel || "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }],
-	  max_tokens: llmConfig.max_tokens || 600,
-          temperature: llmConfig.temperature || 0.8,
-        }),
+      const requestBody = {
+        model: llmConfig.llmModel || "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: llmConfig.max_tokens || 600,
+        temperature: llmConfig.temperature || 0.8,
+      };
+
+      console.log(`Sending LLM Deep Research request to ${endpoint}`, {
+        model: requestBody.model,
+        max_tokens: requestBody.max_tokens,
+        temperature: requestBody.temperature,
+        hasApiKey: !!apiKey
       });
+
+      let llmResponse;
+      try {
+        llmResponse = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(requestBody),
+        });
+      } catch (fetchError: any) {
+        console.error(`Fetch error during LLM Deep Research:`, fetchError);
+        throw new Error(`Failed to connect to LLM endpoint: ${fetchError.message}`);
+      }
 
       if (!llmResponse.ok) {
         const errorBody = await llmResponse.text();
@@ -1051,23 +1118,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: llmResponse.status,
           statusText: llmResponse.statusText,
           endpoint,
-          model: llmConfig.llmModel || "gpt-3.5-turbo",
+          model: requestBody.model,
           errorBody
         });
-        throw new Error(`LLM API request failed: ${llmResponse.statusText} - ${errorBody}`);
+        throw new Error(`LLM API request failed with status ${llmResponse.status}: ${errorBody}`);
       }
 
-      const llmResult = await llmResponse.json() as { choices: { message: { content: string } }[] };
-      const deepResearch = llmResult.choices[0]?.message?.content;
+      let llmResult;
+      try {
+        llmResult = await llmResponse.json() as any;
+      } catch (parseError: any) {
+        console.error(`Failed to parse LLM response as JSON:`, parseError);
+        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
+      }
+
+      const deepResearch = llmResult.choices?.[0]?.message?.content;
 
       if (!deepResearch) {
-        throw new Error("Failed to extract deep research from LLM response");
+        console.error(`Unexpected LLM response structure:`, JSON.stringify(llmResult));
+        throw new Error("Failed to extract deep research from LLM response. Check server logs for response structure.");
       }
 
       res.json({ deepResearch });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Deep research error:", error);
-      res.status(500).json({ error: "Failed to get deep research prompts" });
+      res.status(500).json({
+        error: "Failed to get deep research prompts",
+        details: error.message
+      });
     }
   });
 
