@@ -908,7 +908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: "POST",
         headers,
         body: JSON.stringify({
-          model: "gpt-3.5-turbo", // This can be anything, the local LLM will ignore it
+          model: llmConfig.llmModel || "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
           max_tokens: llmConfig.max_tokens || 750,
           temperature: llmConfig.temperature || 0.7,
@@ -917,6 +917,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!llmResponse.ok) {
         const errorBody = await llmResponse.text();
+        console.error(`LLM Summarization request failed:`, {
+          status: llmResponse.status,
+          statusText: llmResponse.statusText,
+          endpoint,
+          model: llmConfig.llmModel || "gpt-3.5-turbo",
+          errorBody
+        });
         throw new Error(`LLM API request failed with status ${llmResponse.status}: ${errorBody}`);
       }
 
@@ -966,7 +973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: "POST",
         headers,
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: llmConfig.llmModel || "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
 	  max_tokens: llmConfig.max_tokens || 400,
           temperature: llmConfig.temperature || 0.7,
@@ -974,7 +981,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!llmResponse.ok) {
-        throw new Error(`LLM API request failed: ${llmResponse.statusText}`);
+        const errorBody = await llmResponse.text();
+        console.error(`LLM Additional Info request failed:`, {
+          status: llmResponse.status,
+          statusText: llmResponse.statusText,
+          endpoint,
+          model: llmConfig.llmModel || "gpt-3.5-turbo",
+          errorBody
+        });
+        throw new Error(`LLM API request failed: ${llmResponse.statusText} - ${errorBody}`);
       }
 
       const llmResult = await llmResponse.json() as { choices: { message: { content: string } }[] };
@@ -1023,7 +1038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: "POST",
         headers,
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: llmConfig.llmModel || "gpt-3.5-turbo",
           messages: [{ role: "user", content: prompt }],
 	  max_tokens: llmConfig.max_tokens || 600,
           temperature: llmConfig.temperature || 0.8,
@@ -1031,7 +1046,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!llmResponse.ok) {
-        throw new Error(`LLM API request failed: ${llmResponse.statusText}`);
+        const errorBody = await llmResponse.text();
+        console.error(`LLM Deep Research request failed:`, {
+          status: llmResponse.status,
+          statusText: llmResponse.statusText,
+          endpoint,
+          model: llmConfig.llmModel || "gpt-3.5-turbo",
+          errorBody
+        });
+        throw new Error(`LLM API request failed: ${llmResponse.statusText} - ${errorBody}`);
       }
 
       const llmResult = await llmResponse.json() as { choices: { message: { content: string } }[] };
