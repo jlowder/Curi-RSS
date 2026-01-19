@@ -30,6 +30,8 @@ interface SettingsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const API_KEY_PLACEHOLDER = "••••••••";
+
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const queryClient = useQueryClient();
   const [emailConfig, setEmailConfig] = useState<Partial<EmailConfig>>({});
@@ -52,16 +54,19 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   });
 
   useEffect(() => {
-    if (initialEmailConfig) {
+    if (open && initialEmailConfig) {
       setEmailConfig(initialEmailConfig);
     }
-    if (initialLlmConfig) {
-      setLlmConfig(initialLlmConfig);
+    if (open && initialLlmConfig) {
+      setLlmConfig({
+        ...initialLlmConfig,
+        apiKey: initialLlmConfig.hasApiKey ? API_KEY_PLACEHOLDER : initialLlmConfig.apiKey
+      });
     }
-    if (initialPublishingSettings) {
+    if (open && initialPublishingSettings) {
       setPublishingSettings(initialPublishingSettings);
     }
-  }, [initialEmailConfig, initialLlmConfig, initialPublishingSettings]);
+  }, [open, initialEmailConfig, initialLlmConfig, initialPublishingSettings]);
 
   const updateEmailMutation = useMutation({
     mutationFn: async (newConfig: Partial<EmailConfig>) => {
@@ -86,7 +91,11 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   const updateLlmMutation = useMutation({
     mutationFn: async (newConfig: Partial<LlmConfig>) => {
-      return apiRequest("POST", "/api/settings/llm-config", newConfig);
+      const configToSend = { ...newConfig };
+      if (configToSend.apiKey === API_KEY_PLACEHOLDER) {
+        delete configToSend.apiKey;
+      }
+      return apiRequest("POST", "/api/settings/llm-config", configToSend);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/settings/llm-config"] });
