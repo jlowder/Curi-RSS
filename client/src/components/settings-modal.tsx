@@ -307,6 +307,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </AccordionContent>
                 </AccordionItem>
 
+                <AccordionItem value="discuss">
+                  <AccordionTrigger>Discuss Prompt</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2">
+                      <Label htmlFor="discussPrompt">Initial Chat Prompt</Label>
+                      <Textarea
+                        id="discussPrompt"
+                        value={llmConfig.discussPrompt || ""}
+                        onChange={handleLlmChange}
+                        rows={6}
+                        placeholder="Default: 'Summarize the article in one sentence, and ask the user what they would like to discuss about it.'"
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
                 <AccordionItem value="prompt">
                   <AccordionTrigger>Summarization Prompt</AccordionTrigger>
                   <AccordionContent>

@@ -116,6 +116,7 @@ export const llmConfigSchema = z.object({
   prompt: z.string().optional(),
   additionalInfoPrompt: z.string().optional(),
   deepResearchPrompt: z.string().optional(),
+  discussPrompt: z.string().optional(),
   max_tokens: z.number().optional(),
   temperature: z.number().optional(),
 });
