@@ -107,9 +107,11 @@ export function AiChatSection({ articleId, onClose }: AiChatSectionProps) {
                       : 'bg-gray-800 border border-gray-700 text-gray-200'
                   }`}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose prose-invert prose-sm max-w-none">
-                    {msg.content}
-                  </ReactMarkdown>
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             </div>

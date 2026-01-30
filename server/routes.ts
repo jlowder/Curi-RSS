@@ -957,15 +957,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const apiKey = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT);
         hasApiKey = !!apiKey;
       } catch (keytarErrorObj: any) {
-        keyringError = keytarErrorObj.message || String(keytarErrorObj);
+        let errorMessage = keytarErrorObj.message || String(keytarErrorObj);
         if (
-          keyringError.includes("D-Bus") ||
-          keyringError.includes("$DISPLAY") ||
-          keyringError.includes("secret_service_search_items_sync")
+          errorMessage.includes("D-Bus") ||
+          errorMessage.includes("$DISPLAY") ||
+          errorMessage.includes("secret_service_search_items_sync")
         ) {
-          keyringError +=
+          errorMessage +=
             ". On Linux, ensure the server has access to a D-Bus session (e.g. run with dbus-run-session).";
         }
+        keyringError = errorMessage;
         console.error("Keytar failed to check for API key:", keyringError);
       }
 

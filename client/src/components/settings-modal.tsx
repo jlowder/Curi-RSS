@@ -308,65 +308,105 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 </AccordionItem>
 
                 <AccordionItem value="discuss">
-                  <AccordionTrigger>Discuss Prompt</AccordionTrigger>
+                  <AccordionTrigger>AI Discussion (Chat)</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="discussPrompt">Initial Chat Prompt</Label>
-                      <Textarea
-                        id="discussPrompt"
-                        value={llmConfig.discussPrompt || ""}
-                        onChange={handleLlmChange}
-                        rows={6}
-                        placeholder="Default: 'Summarize the article in one sentence, and ask the user what they would like to discuss about it.'"
-                      />
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="discussEnabled" 
+                          checked={llmConfig.discussEnabled} 
+                          onCheckedChange={(checked) => handleLlmBooleanChange('discussEnabled', !!checked)} 
+                        />
+                        <Label htmlFor="discussEnabled">Enable AI Discussion</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="discussPrompt">Initial Chat Prompt</Label>
+                        <Textarea
+                          id="discussPrompt"
+                          value={llmConfig.discussPrompt || ""}
+                          onChange={handleLlmChange}
+                          rows={6}
+                          placeholder="Default: 'Summarize the article in one sentence, and ask the user what they would like to discuss about it.'"
+                        />
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
 
                 <AccordionItem value="prompt">
-                  <AccordionTrigger>Summarization Prompt</AccordionTrigger>
+                  <AccordionTrigger>Summarization</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="prompt">Prompt Template</Label>
-                      <Textarea
-                        id="prompt"
-                        value={llmConfig.prompt || ""}
-                        onChange={handleLlmChange}
-                        rows={6}
-                        placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
-                      />
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="summarizeEnabled" 
+                          checked={llmConfig.summarizeEnabled} 
+                          onCheckedChange={(checked) => handleLlmBooleanChange('summarizeEnabled', !!checked)} 
+                        />
+                        <Label htmlFor="summarizeEnabled">Enable Summarization</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="prompt">Prompt Template</Label>
+                        <Textarea
+                          id="prompt"
+                          value={llmConfig.prompt || ""}
+                          onChange={handleLlmChange}
+                          rows={6}
+                          placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                        />
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
 
                 <AccordionItem value="additionalInfo">
-                  <AccordionTrigger>Additional Information Prompt</AccordionTrigger>
+                  <AccordionTrigger>Additional Information</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="additionalInfoPrompt">Prompt Template</Label>
-                      <Textarea
-                        id="additionalInfoPrompt"
-                        value={llmConfig.additionalInfoPrompt || ""}
-                        onChange={handleLlmChange}
-                        rows={6}
-                        placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
-                      />
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="additionalInfoEnabled" 
+                          checked={llmConfig.additionalInfoEnabled} 
+                          onCheckedChange={(checked) => handleLlmBooleanChange('additionalInfoEnabled', !!checked)} 
+                        />
+                        <Label htmlFor="additionalInfoEnabled">Enable Additional Information</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="additionalInfoPrompt">Prompt Template</Label>
+                        <Textarea
+                          id="additionalInfoPrompt"
+                          value={llmConfig.additionalInfoPrompt || ""}
+                          onChange={handleLlmChange}
+                          rows={6}
+                          placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                        />
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
 
                 <AccordionItem value="deepResearch">
-                  <AccordionTrigger>Deep Research Prompt</AccordionTrigger>
+                  <AccordionTrigger>Deep Research</AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="deepResearchPrompt">Prompt Template</Label>
-                      <Textarea
-                        id="deepResearchPrompt"
-                        value={llmConfig.deepResearchPrompt || ""}
-                        onChange={handleLlmChange}
-                        rows={6}
-                        placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
-                      />
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="deepResearchEnabled" 
+                          checked={llmConfig.deepResearchEnabled} 
+                          onCheckedChange={(checked) => handleLlmBooleanChange('deepResearchEnabled', !!checked)} 
+                        />
+                        <Label htmlFor="deepResearchEnabled">Enable Deep Research</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="deepResearchPrompt">Prompt Template</Label>
+                        <Textarea
+                          id="deepResearchPrompt"
+                          value={llmConfig.deepResearchPrompt || ""}
+                          onChange={handleLlmChange}
+                          rows={6}
+                          placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                        />
+                      </div>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
