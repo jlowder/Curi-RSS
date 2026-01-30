@@ -327,6 +327,7 @@ export class MemStorage implements IStorage {
       enabled: true,
       endpoint: "http://localhost:8000/v1/chat/completions",
       prompt: "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}",
+      discussPrompt: "Summarize this article in one sentence, and ask the user what they would like to discuss about it.",
     };
   }
 }
@@ -749,7 +750,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLlmConfig(): Promise<LlmConfig> {
-    const keys = ["enabled", "endpoint", "prompt", "additionalInfoPrompt", "deepResearchPrompt", "max_tokens", "temperature", "llmModel"];
+    const keys = ["enabled", "endpoint", "prompt", "additionalInfoPrompt", "deepResearchPrompt", "discussPrompt", "max_tokens", "temperature", "llmModel"];
     const settingsList = await Promise.all(keys.map(key => this.getSetting(`llm_${key}`)));
     return {
       enabled: settingsList[0] === undefined ? true : settingsList[0] === 'true',
@@ -757,9 +758,10 @@ export class DatabaseStorage implements IStorage {
       prompt: settingsList[2] ?? undefined,
       additionalInfoPrompt: settingsList[3] ?? undefined,
       deepResearchPrompt: settingsList[4] ?? undefined,
-      max_tokens: settingsList[5] ? parseInt(settingsList[5], 10) : undefined,
-      temperature: settingsList[6] ? parseFloat(settingsList[6]) : undefined,
-      llmModel: settingsList[7] ?? undefined,
+      discussPrompt: settingsList[5] ?? undefined,
+      max_tokens: settingsList[6] ? parseInt(settingsList[6], 10) : undefined,
+      temperature: settingsList[7] ? parseFloat(settingsList[7]) : undefined,
+      llmModel: settingsList[8] ?? undefined,
     };
   }
 }

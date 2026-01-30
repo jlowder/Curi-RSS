@@ -19,7 +19,8 @@ import {
   Send,
   Globe,
   Info,
-  FlaskConical
+  FlaskConical,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
@@ -30,6 +31,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 import { CollapsibleSection } from "@/components/collapsible-section";
+import { AiChatSection } from "@/components/ai-chat-section";
 
 interface ArticleDetailProps {}
 
@@ -58,6 +60,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   const [summary, setSummary] = useState<string | null>(null);
   const [referencedInfo, setReferencedInfo] = useState<string | null>(null);
   const [deepResearch, setDeepResearch] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
 
   const { data: article, isLoading, error, refetch } = useQuery<ArticleWithFeed>({
     queryKey: [`/api/articles/${id}`],
@@ -414,7 +417,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                   Full article content
                 </div>
                 {llmConfig?.enabled && (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -445,9 +448,24 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                       <FlaskConical className="w-4 h-4 mr-2" />
                       {deepResearchMutation.isPending ? "Generating..." : "Deep Research"}
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowChat(true)}
+                      className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      AI Discuss
+                    </Button>
                   </div>
                 )}
               </div>
+              {showChat && article && (
+                <AiChatSection
+                  articleId={article.id}
+                  onClose={() => setShowChat(false)}
+                />
+              )}
               {summary && (
                 <CollapsibleSection
                   title="Article Summary"

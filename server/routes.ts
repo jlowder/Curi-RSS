@@ -1425,6 +1425,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/articles/:id/discuss", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { messages } = req.body; // Array of { role: 'user' | 'assistant', content: string }
+
+      let article = await storage.getArticle(id);
+      if (!article) {
+        return res.status(404).json({ error: "Article not found" });
+      }
+
+      article = await ensureFullArticleContent(article);
+      if (!article.content) {
+        return res.status(404).json({ error: "Article content not found" });
+      }
+
+      const llmConfig = await storage.getLlmConfig();
+      const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
+
+      const plainTextContent = cheerio.load(article.content).text();
+      const truncatedContent =
+        plainTextContent.length > 40000
+          ? plainTextContent.slice(0, 40000) + "... [truncated]"
+          : plainTextContent;
+
+      const systemPrompt = `You are a helpful assistant. Below is an article that you will discuss with the user.
+Article Title: ${article.title}
+Article Text:
+${truncatedContent}`;
+
+      let apiMessages = [
+        { role: "system", content: systemPrompt }
+      ];
+
+      if (!messages || messages.length === 0) {
+        // Initial request - use discussPrompt
+        const discussPromptTemplate = llmConfig.discussPrompt || "Summarize the article in one sentence, and ask the user what they would like to discuss about it.";
+        apiMessages.push({ role: "user", content: discussPromptTemplate });
+      } else {
+        // Continuing conversation
+        apiMessages = apiMessages.concat(messages);
+      }
+
+      const apiKey = await getLlmApiKey();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
+      const requestBody = {
+        model: llmConfig.llmModel || "gpt-3.5-turbo",
+        messages: apiMessages,
+        max_tokens: llmConfig.max_tokens || 4000,
+        temperature: llmConfig.temperature || 0.7,
+      };
+
+      console.log(`Sending LLM Discuss request to ${endpoint}`, {
+        model: requestBody.model,
+        messageCount: apiMessages.length,
+        hasApiKey: !!apiKey,
+      });
+
+      let llmResponse;
+      try {
+        llmResponse = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(requestBody),
+        });
+      } catch (fetchError: any) {
+        console.error(`Fetch error during LLM Discuss:`, fetchError);
+        throw new Error(`Failed to connect to LLM endpoint: ${fetchError.message}`);
+      }
+
+      if (!llmResponse.ok) {
+        const errorBody = await llmResponse.text();
+        console.error(`LLM Discuss request failed:`, {
+          status: llmResponse.status,
+          errorBody,
+        });
+        throw new Error(`LLM API request failed: ${errorBody}`);
+      }
+
+      const llmResult = (await llmResponse.json()) as any;
+      const responseMessage = llmResult.choices?.[0]?.message;
+
+      if (!responseMessage) {
+        throw new Error("Failed to extract response from LLM");
+      }
+
+      res.json({ message: responseMessage });
+    } catch (error: any) {
+      console.error("Discuss error:", error);
+      res.status(500).json({
+        error: "Failed to discuss article",
+        details: error.message,
+      });
+    }
+  });
+
   app.post("/api/feeds/find", async (req, res) => {
     try {
       const { url } = req.body;
