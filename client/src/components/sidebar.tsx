@@ -163,7 +163,7 @@ export function Sidebar({ isOpen, onClose, selectedFeedId, onSelectFeed, onShowA
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <a href="https://github.com/jlowder/ReedFeed" target="_blank" rel="noopener noreferrer" className="w-20 flex-shrink-0">
+              <a href="https://github.com/jlowder/Curi-RSS" target="_blank" rel="noopener noreferrer" className="w-20 flex-shrink-0">
                 <img src="/white_rabbit.png" alt="Curi-RSS" className="w-full" />
               </a>
               <p className="text-sm text-gray-400 ml-4">{randomPhrase}</p>
