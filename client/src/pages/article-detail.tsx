@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
+import { toast } from "@/hooks/use-toast";
 import { truncate } from "@/lib/utils";
 import type { ArticleWithFeed, LlmConfig } from "@shared/schema";
 import { useState } from "react";
@@ -418,45 +419,53 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                 </div>
                 {llmConfig?.enabled && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => summarizeMutation.mutate()}
-                      disabled={summarizeMutation.isPending}
-                      className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      {summarizeMutation.isPending ? "Summarizing..." : "AI Summary"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => referencedInfoMutation.mutate()}
-                      disabled={referencedInfoMutation.isPending}
-                      className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
-                    >
-                      <Info className="w-4 h-4 mr-2" />
-                      {referencedInfoMutation.isPending ? "Getting Info..." : "Referenced Information"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deepResearchMutation.mutate()}
-                      disabled={deepResearchMutation.isPending}
-                      className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
-                    >
-                      <FlaskConical className="w-4 h-4 mr-2" />
-                      {deepResearchMutation.isPending ? "Generating..." : "Deep Research"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowChat(true)}
-                      className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      AI Discuss
-                    </Button>
+                    {llmConfig.summarizeEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => summarizeMutation.mutate()}
+                        disabled={summarizeMutation.isPending}
+                        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        {summarizeMutation.isPending ? "Summarizing..." : "AI Summary"}
+                      </Button>
+                    )}
+                    {llmConfig.additionalInfoEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => referencedInfoMutation.mutate()}
+                        disabled={referencedInfoMutation.isPending}
+                        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+                      >
+                        <Info className="w-4 h-4 mr-2" />
+                        {referencedInfoMutation.isPending ? "Getting Info..." : "Referenced Information"}
+                      </Button>
+                    )}
+                    {llmConfig.deepResearchEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deepResearchMutation.mutate()}
+                        disabled={deepResearchMutation.isPending}
+                        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+                      >
+                        <FlaskConical className="w-4 h-4 mr-2" />
+                        {deepResearchMutation.isPending ? "Generating..." : "Deep Research"}
+                      </Button>
+                    )}
+                    {llmConfig.discussEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowChat(true)}
+                        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        AI Discuss
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
