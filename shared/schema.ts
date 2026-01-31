@@ -121,6 +121,8 @@ export const llmConfigSchema = z.object({
   deepResearchPrompt: z.string().optional(),
   discussEnabled: z.boolean().default(true),
   discussPrompt: z.string().optional(),
+  counterpointsEnabled: z.boolean().default(true),
+  counterpointsPrompt: z.string().optional(),
   max_tokens: z.number().optional(),
   temperature: z.number().optional(),
 });
@@ -146,4 +148,12 @@ export type PublishQueue = z.infer<typeof publishQueueSchema>;
 export type FoundFeed = {
   url: string;
   title: string;
+};
+
+export const DEFAULT_PROMPTS = {
+  summarize: "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}",
+  additionalInfo: "Analyze the following article and provide two lists in markdown format. First, a concise list of the most prominent people, organizations, or products mentioned (limit to top 10). Second, a list of 3-5 suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings. DO NOT repeat the article text and DO NOT be overly verbose.\n\nArticle Text:\n{article_text}",
+  deepResearch: "Based on the following article, generate a list of 5 thought-provoking prompts for deep research. The prompts should be suitable for a researcher or journalist to use as a starting point for a detailed investigation. The response should be a markdown-formatted list of these 5 prompts and nothing else. Do not repeat the article text.\n\nArticle Text:\n{article_text}",
+  counterpoints: "Examine the following article with a critical eye and play devil's advocate. Provide a bulleted list of counterpoints to the main arguments presented in the article. Do not repeat the article text.\n\nArticle Text:\n{article_text}",
+  discuss: "Summarize the article in one sentence, and ask the user what they would like to discuss about it."
 };

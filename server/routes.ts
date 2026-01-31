@@ -15,6 +15,7 @@ import {
   publishingSettingsSchema,
   publishQueueSchema,
   type Article,
+  DEFAULT_PROMPTS,
 } from "@shared/schema";
 import Parser from "rss-parser";
 import fetch from "node-fetch";
@@ -1088,8 +1089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
 
       const promptTemplate =
-        llmConfig.prompt ||
-        "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}";
+        llmConfig.prompt || DEFAULT_PROMPTS.summarize;
 
       const plainTextContent = cheerio.load(article.content).text();
       const truncatedContent =
@@ -1207,8 +1207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
 
       const promptTemplate =
-        llmConfig.additionalInfoPrompt ||
-        "Analyze the following article and provide two lists in markdown format. First, a concise list of the most prominent people, organizations, or products mentioned (limit to top 10). Second, a list of 3-5 suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings. DO NOT repeat the article text and DO NOT be overly verbose.\n\nArticle Text:\n{article_text}";
+        llmConfig.additionalInfoPrompt || DEFAULT_PROMPTS.additionalInfo;
 
       const plainTextContent = cheerio.load(article.content).text();
       const truncatedContent =
@@ -1326,8 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
 
       const promptTemplate =
-        llmConfig.deepResearchPrompt ||
-        "Based on the following article, generate a list of 5 thought-provoking prompts for deep research. The prompts should be suitable for a researcher or journalist to use as a starting point for a detailed investigation. The response should be a markdown-formatted list of these 5 prompts and nothing else. Do not repeat the article text.\n\nArticle Text:\n{article_text}";
+        llmConfig.deepResearchPrompt || DEFAULT_PROMPTS.deepResearch;
 
       const plainTextContent = cheerio.load(article.content).text();
       const truncatedContent =
@@ -1426,6 +1424,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/articles/:id/counterpoints", async (req, res) => {
+    try {
+      const { id } = req.params;
+      let article = await storage.getArticle(id);
+
+      if (!article) {
+        return res.status(404).json({ error: "Article not found" });
+      }
+
+      article = await ensureFullArticleContent(article);
+
+      if (!article.content) {
+        return res.status(404).json({ error: "Article content not found" });
+      }
+
+      const llmConfig = await storage.getLlmConfig();
+      const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
+
+      const promptTemplate =
+        llmConfig.counterpointsPrompt || DEFAULT_PROMPTS.counterpoints;
+
+      const plainTextContent = cheerio.load(article.content).text();
+      const truncatedContent =
+        plainTextContent.length > 40000
+          ? plainTextContent.slice(0, 40000) + "... [truncated]"
+          : plainTextContent;
+      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
+
+      const apiKey = await getLlmApiKey();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
+
+      const requestBody = {
+        model: llmConfig.llmModel || "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: llmConfig.max_tokens || 4000,
+        temperature: llmConfig.temperature || 0.8,
+      };
+
+      console.log(`Sending LLM Counterpoints request to ${endpoint}`, {
+        model: requestBody.model,
+        max_tokens: requestBody.max_tokens,
+        temperature: requestBody.temperature,
+        hasApiKey: !!apiKey,
+      });
+
+      let llmResponse;
+      try {
+        llmResponse = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(requestBody),
+        });
+      } catch (fetchError: any) {
+        console.error(`Fetch error during LLM Counterpoints:`, fetchError);
+        throw new Error(
+          `Failed to connect to LLM endpoint: ${fetchError.message}`,
+        );
+      }
+
+      if (!llmResponse.ok) {
+        const errorBody = await llmResponse.text();
+        console.error(`LLM Counterpoints request failed:`, {
+          status: llmResponse.status,
+          statusText: llmResponse.statusText,
+          endpoint,
+          model: requestBody.model,
+          errorBody,
+        });
+        throw new Error(
+          `LLM API request failed with status ${llmResponse.status}: ${errorBody}`,
+        );
+      }
+
+      let llmResult;
+      try {
+        llmResult = (await llmResponse.json()) as any;
+      } catch (parseError: any) {
+        console.error(`Failed to parse LLM response as JSON:`, parseError);
+        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
+      }
+
+      const counterpoints = llmResult.choices?.[0]?.message?.content;
+      const finishReason = llmResult.choices?.[0]?.finish_reason;
+
+      if (!counterpoints) {
+        console.error(
+          `Unexpected LLM response structure:`,
+          JSON.stringify(llmResult),
+        );
+        throw new Error(
+          "Failed to extract counterpoints from LLM response. Check server logs for response structure.",
+        );
+      }
+
+      console.log(
+        `LLM Counterpoints complete. Length: ${counterpoints.length} chars. Finish reason: ${finishReason}`,
+      );
+      if (counterpoints.length > 0) {
+        console.log(
+          `Response start: ${counterpoints.substring(0, 100).replace(/\n/g, " ")}...`,
+        );
+      }
+
+      res.json({ counterpoints });
+    } catch (error: any) {
+      console.error("Counterpoints error:", error);
+      res.status(500).json({
+        error: "Failed to get counterpoints",
+        details: error.message,
+      });
+    }
+  });
+
   app.post("/api/articles/:id/discuss", async (req, res) => {
     try {
       const { id } = req.params;
@@ -1461,7 +1577,7 @@ ${truncatedContent}`;
 
       if (!messages || messages.length === 0) {
         // Initial request - use discussPrompt
-        const discussPromptTemplate = llmConfig.discussPrompt || "Summarize the article in one sentence, and ask the user what they would like to discuss about it.";
+        const discussPromptTemplate = llmConfig.discussPrompt || DEFAULT_PROMPTS.discuss;
         apiMessages.push({ role: "user", content: discussPromptTemplate });
       } else {
         // Continuing conversation

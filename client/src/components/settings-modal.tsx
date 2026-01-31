@@ -307,32 +307,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="discuss">
-                  <AccordionTrigger>AI Discussion (Chat)</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4 pt-2">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="discussEnabled" 
-                          checked={llmConfig.discussEnabled} 
-                          onCheckedChange={(checked) => handleLlmBooleanChange('discussEnabled', !!checked)} 
-                        />
-                        <Label htmlFor="discussEnabled">Enable AI Discussion</Label>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="discussPrompt">Initial Chat Prompt</Label>
-                        <Textarea
-                          id="discussPrompt"
-                          value={llmConfig.discussPrompt || ""}
-                          onChange={handleLlmChange}
-                          rows={6}
-                          placeholder="Default: 'Summarize the article in one sentence, and ask the user what they would like to discuss about it.'"
-                        />
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
                 <AccordionItem value="prompt">
                   <AccordionTrigger>Summarization</AccordionTrigger>
                   <AccordionContent>
@@ -352,7 +326,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                           value={llmConfig.prompt || ""}
                           onChange={handleLlmChange}
                           rows={6}
-                          placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                          placeholder="Enter prompt template. Include '{article_text}' for content injection."
                         />
                       </div>
                     </div>
@@ -378,7 +352,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                           value={llmConfig.additionalInfoPrompt || ""}
                           onChange={handleLlmChange}
                           rows={6}
-                          placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                          placeholder="Enter prompt template. Include '{article_text}' for content injection."
                         />
                       </div>
                     </div>
@@ -404,7 +378,59 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                           value={llmConfig.deepResearchPrompt || ""}
                           onChange={handleLlmChange}
                           rows={6}
-                          placeholder="Default prompt will be used if empty. The prompt should include '{article_text}' where the article content should be injected."
+                          placeholder="Enter prompt template. Include '{article_text}' for content injection."
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="counterpoints">
+                  <AccordionTrigger>Counterpoints</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="counterpointsEnabled" 
+                          checked={llmConfig.counterpointsEnabled} 
+                          onCheckedChange={(checked) => handleLlmBooleanChange('counterpointsEnabled', !!checked)} 
+                        />
+                        <Label htmlFor="counterpointsEnabled">Enable Counterpoints</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="counterpointsPrompt">Prompt Template</Label>
+                        <Textarea
+                          id="counterpointsPrompt"
+                          value={llmConfig.counterpointsPrompt || ""}
+                          onChange={handleLlmChange}
+                          rows={6}
+                          placeholder="Enter prompt template. Include '{article_text}' for content injection."
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="discuss">
+                  <AccordionTrigger>AI Discussion (Chat)</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="discussEnabled" 
+                          checked={llmConfig.discussEnabled} 
+                          onCheckedChange={(checked) => handleLlmBooleanChange('discussEnabled', !!checked)} 
+                        />
+                        <Label htmlFor="discussEnabled">Enable AI Discussion</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="discussPrompt">Initial Chat Prompt</Label>
+                        <Textarea
+                          id="discussPrompt"
+                          value={llmConfig.discussPrompt || ""}
+                          onChange={handleLlmChange}
+                          rows={6}
+                          placeholder="Enter initial chat prompt."
                         />
                       </div>
                     </div>
