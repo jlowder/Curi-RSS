@@ -563,6 +563,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mark all articles in feed as read
+  app.post("/api/feeds/:id/mark-read", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Check if feed exists
+      const feed = await storage.getFeed(id);
+      if (!feed) {
+        return res.status(404).json({ error: "Feed not found" });
+      }
+
+      // Mark all unread articles in this feed as read
+      await storage.updateArticlesAsReadByFeed(id);
+
+      // Invalidate cache
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking feed as read:", error);
+      res.status(500).json({ error: "Failed to mark feed as read" });
+    }
+  });
+
   // Update feed
   app.put("/api/feeds/:id", async (req, res) => {
     try {
@@ -1455,13 +1477,13 @@ Article Title: ${article.title}
 Article Text:
 ${truncatedContent}`;
 
-      let apiMessages = [
-        { role: "system", content: systemPrompt }
-      ];
+      let apiMessages = [{ role: "system", content: systemPrompt }];
 
       if (!messages || messages.length === 0) {
         // Initial request - use discussPrompt
-        const discussPromptTemplate = llmConfig.discussPrompt || "Summarize the article in one sentence, and ask the user what they would like to discuss about it.";
+        const discussPromptTemplate =
+          llmConfig.discussPrompt ||
+          "Summarize the article in one sentence, and ask the user what they would like to discuss about it.";
         apiMessages.push({ role: "user", content: discussPromptTemplate });
       } else {
         // Continuing conversation
@@ -1498,7 +1520,9 @@ ${truncatedContent}`;
         });
       } catch (fetchError: any) {
         console.error(`Fetch error during LLM Discuss:`, fetchError);
-        throw new Error(`Failed to connect to LLM endpoint: ${fetchError.message}`);
+        throw new Error(
+          `Failed to connect to LLM endpoint: ${fetchError.message}`,
+        );
       }
 
       if (!llmResponse.ok) {
