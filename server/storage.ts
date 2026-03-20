@@ -487,7 +487,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFeedsWithUnreadCount(): Promise<FeedWithUnreadCount[]> {
-    console.log("DEBUG: Getting feeds with unread count");
     const result = await this.db
       .select({
         id: feeds.id,
@@ -512,21 +511,10 @@ export class DatabaseStorage implements IStorage {
       .groupBy(feeds.id)
       .orderBy(desc(feeds.createdAt));
 
-    console.log("DEBUG: Raw result from database:", result);
-
-    const mappedResult = result.map((r: any) => {
-      const unreadCount = Number(r.unreadCount) || 0;
-      console.log(
-        `DEBUG: Feed ${r.title} (${r.id}): raw count=${r.unreadCount}, final count=${unreadCount}`,
-      );
-      return {
-        ...r,
-        unreadCount: unreadCount,
-      };
-    });
-
-    console.log("DEBUG: Final mapped result:", mappedResult);
-    return mappedResult;
+    return result.map((r: any) => ({
+      ...r,
+      unreadCount: Number(r.unreadCount) || 0,
+    }));
   }
 
   async updateFeed(
@@ -661,7 +649,6 @@ export class DatabaseStorage implements IStorage {
     // Handle reading status categories with priority: saved > read > unread
     if (category === "unread") {
       conditions.push(or(eq(articles.isRead, false), isNull(articles.isRead)));
-      console.log("DEBUG: Filtering for unread articles");
     } else if (category === "read") {
       conditions.push(
         and(eq(articles.isRead, true), eq(articles.isBookmarked, false))!,
@@ -703,9 +690,6 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(feeds, eq(articles.feedId, feeds.id))
       .where(and(...conditions));
 
-    console.log(
-      `DEBUG: Found ${result.length} articles for feed ${feedId} in category ${category}`,
-    );
     return result;
   }
 
@@ -915,7 +899,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateArticlesAsReadByFeed(feedId: string): Promise<void> {
-    console.log(`Updating articles as read for feed ${feedId}`);
     await this.db
       .update(articles)
       .set({ isRead: true })
