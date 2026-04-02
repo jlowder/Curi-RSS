@@ -1,4 +1,17 @@
-import { type Feed, type InsertFeed, type Article, type InsertArticle, type UpdateArticle, type FeedWithUnreadCount, type ArticleWithFeed, type ArticleStats, type FeedStats, settings, LlmConfig, DEFAULT_PROMPTS } from "@shared/schema";
+import { type Feed,
+        type InsertFeed,
+        type Article,
+        type InsertArticle,
+        type UpdateArticle,
+        type FeedWithUnreadCount,
+        type ArticleWithFeed,
+        type ArticleStats,
+        type FeedStats,
+        settings,
+        LlmConfig,
+        DEFAULT_PROMPTS
+       } from "@shared/schema";
+
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -17,9 +30,19 @@ export interface IStorage {
   getArticle(id: string): Promise<ArticleWithFeed | undefined>;
   getArticlesByFeed(feedId: string): Promise<Article[]>;
   getAllArticles(): Promise<ArticleWithFeed[]>;
-  getFilteredArticles(query?: string, feedId?: string, category?: string): Promise<ArticleWithFeed[]>;
-  updateArticle(id: string, article: UpdateArticle): Promise<Article | undefined>;
-  updateArticleContent(id: string, updates: { content?: string | null, imageUrl?: string | null }): Promise<Article | undefined>;
+  getFilteredArticles(
+    query?: string,
+    feedId?: string,
+    category?: string,
+  ): Promise<ArticleWithFeed[]>;
+  updateArticle(
+    id: string,
+    article: UpdateArticle,
+  ): Promise<Article | undefined>;
+  updateArticleContent(
+    id: string,
+    updates: { content?: string | null; imageUrl?: string | null },
+  ): Promise<Article | undefined>;
   deleteArticle(id: string): Promise<boolean>;
   deleteArticlesByFeed(feedId: string): Promise<boolean>;
   getArticleByUrl(url: string): Promise<Article | undefined>;
@@ -28,9 +51,9 @@ export interface IStorage {
   deleteArticlesWithNullPublishedAt(): Promise<number>;
   getQueuedArticles(): Promise<Article[]>;
   updateArticlesAsPublished(ids: string[]): Promise<void>;
+  updateArticlesAsReadByFeed(feedId: string): Promise<void>;
   getSetting(key: string): Promise<string | undefined>;
   setSetting(key: string, value: string): Promise<void>;
-  getLlmConfig(): Promise<LlmConfig>;
 }
 
 export class MemStorage implements IStorage {
@@ -63,7 +86,7 @@ export class MemStorage implements IStorage {
   }
 
   async getFeedByUrl(url: string): Promise<Feed | undefined> {
-    return Array.from(this.feeds.values()).find(feed => feed.url === url);
+    return Array.from(this.feeds.values()).find((feed) => feed.url === url);
   }
 
   async getAllFeeds(): Promise<Feed[]> {
@@ -72,17 +95,23 @@ export class MemStorage implements IStorage {
 
   async getFeedsWithUnreadCount(): Promise<FeedWithUnreadCount[]> {
     const feeds = Array.from(this.feeds.values());
-    return feeds.map(feed => {
-      const unreadCount = Array.from(this.articles.values())
-        .filter(article => article.feedId === feed.id && !article.isRead).length;
+    return feeds.map((feed) => {
+      const unreadCount = Array.from(this.articles.values()).filter(
+        (article) =>
+          article.feedId === feed.id &&
+          (!article.isRead || article.isRead === null),
+      ).length;
       return { ...feed, unreadCount };
     });
   }
 
-  async updateFeed(id: string, feedUpdate: Partial<Feed>): Promise<Feed | undefined> {
+  async updateFeed(
+    id: string,
+    feedUpdate: Partial<Feed>,
+  ): Promise<Feed | undefined> {
     const feed = this.feeds.get(id);
     if (!feed) return undefined;
-    
+
     const updatedFeed = { ...feed, ...feedUpdate };
     this.feeds.set(id, updatedFeed);
     return updatedFeed;
@@ -128,21 +157,22 @@ export class MemStorage implements IStorage {
   }
 
   async getArticlesByFeed(feedId: string): Promise<Article[]> {
-    return Array.from(this.articles.values())
-      .filter(article => article.feedId === feedId);
+    return Array.from(this.articles.values()).filter(
+      (article) => article.feedId === feedId,
+    );
   }
 
   async getAllArticles(): Promise<ArticleWithFeed[]> {
     const articles = Array.from(this.articles.values());
     const result: ArticleWithFeed[] = [];
-    
+
     for (const article of articles) {
       const feed = this.feeds.get(article.feedId);
       if (feed) {
         result.push({ ...article, feed });
       }
     }
-    
+
     return result.sort((a, b) => {
       const dateA = a.publishedAt || a.createdAt;
       const dateB = b.publishedAt || b.createdAt;
@@ -151,55 +181,71 @@ export class MemStorage implements IStorage {
     });
   }
 
-  async getFilteredArticles(query?: string, feedId?: string, category?: string): Promise<ArticleWithFeed[]> {
+  async getFilteredArticles(
+    query?: string,
+    feedId?: string,
+    category?: string,
+  ): Promise<ArticleWithFeed[]> {
     let articles = await this.getAllArticles();
-    
+
     // Filter by category first
     if (category) {
       switch (category) {
-        case 'unread':
-          articles = articles.filter(article => !article.isRead);
+        case "unread":
+          articles = articles.filter(
+            (article) => !article.isRead || article.isRead === null,
+          );
           break;
-        case 'read':
-          articles = articles.filter(article => article.isRead && !article.isBookmarked);
+        case "read":
+          articles = articles.filter(
+            (article) => article.isRead && !article.isBookmarked,
+          );
           break;
-        case 'saved':
-          articles = articles.filter(article => article.isBookmarked);
+        case "saved":
+          articles = articles.filter((article) => article.isBookmarked);
           break;
       }
     }
-    
-    // Filter by specific feed only when in unread category
-    if (feedId && feedId !== 'all' && (!category || category === 'unread')) {
-      articles = articles.filter(article => article.feedId === feedId);
+
+    // Filter by specific feed when a feedId is provided (except for "all")
+    if (feedId && feedId !== "all") {
+      articles = articles.filter((article) => article.feedId === feedId);
     }
-    
+
     // Filter by search query
     if (query) {
       const searchQuery = query.toLowerCase();
-      articles = articles.filter(article =>
-        article.title.toLowerCase().includes(searchQuery) ||
-        (article.description && article.description.toLowerCase().includes(searchQuery)) ||
-        article.feed.title.toLowerCase().includes(searchQuery)
+      articles = articles.filter(
+        (article) =>
+          article.title.toLowerCase().includes(searchQuery) ||
+          (article.description &&
+            article.description.toLowerCase().includes(searchQuery)) ||
+          article.feed.title.toLowerCase().includes(searchQuery),
       );
     }
-    
+
     return articles;
   }
 
-  async updateArticle(id: string, articleUpdate: UpdateArticle): Promise<Article | undefined> {
+  async updateArticle(
+    id: string,
+    articleUpdate: UpdateArticle,
+  ): Promise<Article | undefined> {
     const article = this.articles.get(id);
     if (!article) return undefined;
-    
+
     const updatedArticle = { ...article, ...articleUpdate };
     this.articles.set(id, updatedArticle);
     return updatedArticle;
   }
 
-  async updateArticleContent(id: string, updates: { content?: string | null, imageUrl?: string | null }): Promise<Article | undefined> {
+  async updateArticleContent(
+    id: string,
+    updates: { content?: string | null; imageUrl?: string | null },
+  ): Promise<Article | undefined> {
     const article = this.articles.get(id);
     if (!article) return undefined;
-    
+
     const updatedArticle = { ...article, ...updates };
     this.articles.set(id, updatedArticle);
     return updatedArticle;
@@ -212,29 +258,37 @@ export class MemStorage implements IStorage {
   async deleteArticlesByFeed(feedId: string): Promise<boolean> {
     const articles = Array.from(this.articles.entries());
     let deleted = false;
-    
+
     for (const [id, article] of articles) {
       if (article.feedId === feedId) {
         this.articles.delete(id);
         deleted = true;
       }
     }
-    
+
     return deleted;
   }
 
   async getArticleByUrl(url: string): Promise<Article | undefined> {
-    return Array.from(this.articles.values()).find(article => article.url === url);
+    return Array.from(this.articles.values()).find(
+      (article) => article.url === url,
+    );
   }
 
   async getArticleStats(): Promise<ArticleStats> {
     const articles = Array.from(this.articles.values());
-    
-    const unreadCount = articles.filter(article => !article.isRead).length;
-    const readCount = articles.filter(article => article.isRead && !article.isBookmarked).length;
-    const savedCount = articles.filter(article => article.isBookmarked).length;
-    const queuedCount = articles.filter(article => (article as any).isQueued).length;
-    
+
+    const unreadCount = articles.filter((article) => !article.isRead).length;
+    const readCount = articles.filter(
+      (article) => article.isRead && !article.isBookmarked,
+    ).length;
+    const savedCount = articles.filter(
+      (article) => article.isBookmarked,
+    ).length;
+    const queuedCount = articles.filter(
+      (article) => (article as any).isQueued,
+    ).length;
+
     return { unreadCount, readCount, savedCount, queuedCount };
   }
 
@@ -242,11 +296,20 @@ export class MemStorage implements IStorage {
     const feed = this.feeds.get(feedId);
     if (!feed) return null;
 
-    const feedArticles = Array.from(this.articles.values()).filter(article => article.feedId === feedId);
-    
+    const feedArticles = Array.from(this.articles.values()).filter(
+      (article) => article.feedId === feedId,
+    );
+
     if (feedArticles.length === 0) {
-      const feedCreatedTime = feed.createdAt ? feed.createdAt.getTime() : new Date().getTime();
-      const daysSinceCreated = Math.max(1, Math.floor((new Date().getTime() - feedCreatedTime) / (1000 * 60 * 60 * 24)));
+      const feedCreatedTime = feed.createdAt
+        ? feed.createdAt.getTime()
+        : new Date().getTime();
+      const daysSinceCreated = Math.max(
+        1,
+        Math.floor(
+          (new Date().getTime() - feedCreatedTime) / (1000 * 60 * 60 * 24),
+        ),
+      );
       return {
         totalArticles: 0,
         articlesPerDay: 0,
@@ -256,15 +319,30 @@ export class MemStorage implements IStorage {
       };
     }
 
-    const sortedArticles = feedArticles.sort((a, b) => 
-      (b.publishedAt?.getTime() || (b.createdAt ? b.createdAt.getTime() : 0)) - (a.publishedAt?.getTime() || (a.createdAt ? a.createdAt.getTime() : 0))
+    const sortedArticles = feedArticles.sort(
+      (a, b) =>
+        (b.publishedAt?.getTime() ||
+          (b.createdAt ? b.createdAt.getTime() : 0)) -
+        (a.publishedAt?.getTime() || (a.createdAt ? a.createdAt.getTime() : 0)),
     );
 
-    const lastArticleDate = sortedArticles[0].publishedAt || sortedArticles[0].createdAt;
-    const firstArticleDate = sortedArticles[sortedArticles.length - 1].publishedAt || sortedArticles[sortedArticles.length - 1].createdAt;
-    const feedCreatedTime = feed.createdAt ? feed.createdAt.getTime() : new Date().getTime();
-    const daysSinceCreated = Math.max(1, Math.floor((new Date().getTime() - feedCreatedTime) / (1000 * 60 * 60 * 24)));
-    const articlesPerDay = parseFloat((feedArticles.length / daysSinceCreated).toFixed(2));
+    const lastArticleDate =
+      sortedArticles[0].publishedAt || sortedArticles[0].createdAt;
+    const firstArticleDate =
+      sortedArticles[sortedArticles.length - 1].publishedAt ||
+      sortedArticles[sortedArticles.length - 1].createdAt;
+    const feedCreatedTime = feed.createdAt
+      ? feed.createdAt.getTime()
+      : new Date().getTime();
+    const daysSinceCreated = Math.max(
+      1,
+      Math.floor(
+        (new Date().getTime() - feedCreatedTime) / (1000 * 60 * 60 * 24),
+      ),
+    );
+    const articlesPerDay = parseFloat(
+      (feedArticles.length / daysSinceCreated).toFixed(2),
+    );
 
     return {
       totalArticles: feedArticles.length,
@@ -278,19 +356,23 @@ export class MemStorage implements IStorage {
   async cleanupOldArticles(daysOld: number = 30): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    
+
     let deletedCount = 0;
-    const articlesToDelete = Array.from(this.articles.values()).filter(article => {
-      // Only delete read articles that are not bookmarked and older than cutoff
-      const articleDate = article.createdAt || new Date();
-      return article.isRead && !article.isBookmarked && articleDate < cutoffDate;
-    });
-    
+    const articlesToDelete = Array.from(this.articles.values()).filter(
+      (article) => {
+        // Only delete read articles that are not bookmarked and older than cutoff
+        const articleDate = article.createdAt || new Date();
+        return (
+          article.isRead && !article.isBookmarked && articleDate < cutoffDate
+        );
+      },
+    );
+
     for (const article of articlesToDelete) {
       this.articles.delete(article.id);
       deletedCount++;
     }
-    
+
     return deletedCount;
   }
 
@@ -300,16 +382,31 @@ export class MemStorage implements IStorage {
   }
 
   async getQueuedArticles(): Promise<Article[]> {
-    return Array.from(this.articles.values()).filter(a => (a as any).isQueued);
+    return Array.from(this.articles.values()).filter(
+      (a) => (a as any).isQueued,
+    );
   }
 
-
   async updateArticlesAsPublished(ids: string[]): Promise<void> {
-    ids.forEach(id => {
+    ids.forEach((id) => {
       const article = this.articles.get(id);
       if (article) {
         article.isRead = true;
         article.isQueued = false;
+        this.articles.set(id, article);
+      }
+    });
+  }
+
+  async updateArticlesAsReadByFeed(feedId: string): Promise<void> {
+    const articles = Array.from(this.articles.values());
+    articles.forEach((article) => {
+      if (
+        article.feedId === feedId &&
+        (!article.isRead || article.isRead === null)
+      ) {
+        article.isRead = true;
+        this.articles.set(article.id, article);
       }
     });
   }
@@ -327,21 +424,31 @@ export class MemStorage implements IStorage {
       enabled: true,
       endpoint: "http://localhost:8000/v1/chat/completions",
       summarizeEnabled: true,
-      prompt: DEFAULT_PROMPTS.summarize,
+      prompt:
+        "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}",
       additionalInfoEnabled: true,
       deepResearchEnabled: true,
       discussEnabled: true,
-      discussPrompt: DEFAULT_PROMPTS.discuss,
-      counterpointsEnabled: true,
-      counterpointsPrompt: DEFAULT_PROMPTS.counterpoints,
+      discussPrompt:
+        "Summarize this article in one sentence, and ask the user what they would like to discuss about it.",
     };
   }
 }
 
-// Database imports  
+// Database imports
 import { db } from "./db";
 import { feeds, articles } from "@shared/schema";
-import { eq, desc, and, or, like, count, sql, inArray, isNull } from "drizzle-orm";
+import {
+  eq,
+  desc,
+  and,
+  or,
+  like,
+  count,
+  sql,
+  inArray,
+  isNull,
+} from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   private db;
@@ -373,7 +480,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllFeeds(): Promise<Feed[]> {
-    return await this.db.select().from(feeds).where(eq(feeds.isActive, true)).orderBy(desc(feeds.createdAt));
+    return await this.db
+      .select()
+      .from(feeds)
+      .where(eq(feeds.isActive, true))
+      .orderBy(desc(feeds.createdAt));
   }
 
   async getFeedsWithUnreadCount(): Promise<FeedWithUnreadCount[]> {
@@ -387,10 +498,16 @@ export class DatabaseStorage implements IStorage {
         lastFetched: feeds.lastFetched,
         isActive: feeds.isActive,
         createdAt: feeds.createdAt,
-        unreadCount: count(articles.id).as('unreadCount'),
+        unreadCount: count(articles.id).as("unreadCount"),
       })
       .from(feeds)
-      .leftJoin(articles, and(eq(articles.feedId, feeds.id), eq(articles.isRead, false)))
+      .leftJoin(
+        articles,
+        and(
+          eq(articles.feedId, feeds.id),
+          or(eq(articles.isRead, false), isNull(articles.isRead)),
+        ),
+      )
       .where(eq(feeds.isActive, true))
       .groupBy(feeds.id)
       .orderBy(desc(feeds.createdAt));
@@ -401,7 +518,10 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async updateFeed(id: string, feedUpdate: Partial<Feed>): Promise<Feed | undefined> {
+  async updateFeed(
+    id: string,
+    feedUpdate: Partial<Feed>,
+  ): Promise<Feed | undefined> {
     const [feed] = await this.db
       .update(feeds)
       .set(feedUpdate)
@@ -413,7 +533,7 @@ export class DatabaseStorage implements IStorage {
   async deleteFeed(id: string): Promise<boolean> {
     // Delete all articles for this feed first
     await this.db.delete(articles).where(eq(articles.feedId, id));
-    
+
     // Then delete the feed
     const result = await this.db.delete(feeds).where(eq(feeds.id, id));
     return result.changes > 0;
@@ -453,7 +573,7 @@ export class DatabaseStorage implements IStorage {
           lastFetched: feeds.lastFetched,
           isActive: feeds.isActive,
           createdAt: feeds.createdAt,
-        }
+        },
       })
       .from(articles)
       .innerJoin(feeds, eq(articles.feedId, feeds.id))
@@ -496,7 +616,7 @@ export class DatabaseStorage implements IStorage {
           lastFetched: feeds.lastFetched,
           isActive: feeds.isActive,
           createdAt: feeds.createdAt,
-        }
+        },
       })
       .from(articles)
       .innerJoin(feeds, eq(articles.feedId, feeds.id))
@@ -506,32 +626,37 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getFilteredArticles(query?: string, feedId?: string, category?: string): Promise<ArticleWithFeed[]> {
+  async getFilteredArticles(
+    query?: string,
+    feedId?: string,
+    category?: string,
+  ): Promise<ArticleWithFeed[]> {
     let conditions = [eq(feeds.isActive, true)];
-    
+
     if (query) {
-      conditions.push(or(
-        like(articles.title, `%${query}%`),
-        like(articles.description, `%${query}%`),
-        like(articles.content, `%${query}%`)
-      )!);
+      conditions.push(
+        or(
+          like(articles.title, `%${query}%`),
+          like(articles.description, `%${query}%`),
+          like(articles.content, `%${query}%`),
+        )!,
+      );
     }
-    
-    if (feedId && feedId !== 'all') {
+
+    if (feedId && feedId !== "all") {
       conditions.push(eq(articles.feedId, feedId));
     }
-    
+
     // Handle reading status categories with priority: saved > read > unread
-    if (category === 'unread') {
-      conditions.push(eq(articles.isRead, false));
-    } else if (category === 'read') {
-      conditions.push(and(
-        eq(articles.isRead, true),
-        eq(articles.isBookmarked, false)
-      )!);
-    } else if (category === 'saved') {
+    if (category === "unread") {
+      conditions.push(or(eq(articles.isRead, false), isNull(articles.isRead)));
+    } else if (category === "read") {
+      conditions.push(
+        and(eq(articles.isRead, true), eq(articles.isBookmarked, false))!,
+      );
+    } else if (category === "saved") {
       conditions.push(eq(articles.isBookmarked, true));
-    } else if (category === 'queued') {
+    } else if (category === "queued") {
       conditions.push(eq(articles.isQueued, true));
     }
 
@@ -560,7 +685,7 @@ export class DatabaseStorage implements IStorage {
           lastFetched: feeds.lastFetched,
           isActive: feeds.isActive,
           createdAt: feeds.createdAt,
-        }
+        },
       })
       .from(articles)
       .innerJoin(feeds, eq(articles.feedId, feeds.id))
@@ -570,7 +695,10 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateArticle(id: string, articleUpdate: UpdateArticle): Promise<Article | undefined> {
+  async updateArticle(
+    id: string,
+    articleUpdate: UpdateArticle,
+  ): Promise<Article | undefined> {
     const [article] = await this.db
       .update(articles)
       .set(articleUpdate)
@@ -579,7 +707,10 @@ export class DatabaseStorage implements IStorage {
     return article || undefined;
   }
 
-  async updateArticleContent(id: string, updates: { content?: string | null, imageUrl?: string | null }): Promise<Article | undefined> {
+  async updateArticleContent(
+    id: string,
+    updates: { content?: string | null; imageUrl?: string | null },
+  ): Promise<Article | undefined> {
     const [article] = await this.db
       .update(articles)
       .set(updates)
@@ -594,12 +725,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteArticlesByFeed(feedId: string): Promise<boolean> {
-    const result = await this.db.delete(articles).where(eq(articles.feedId, feedId));
+    const result = await this.db
+      .delete(articles)
+      .where(eq(articles.feedId, feedId));
     return result.changes > 0;
   }
 
   async getArticleByUrl(url: string): Promise<Article | undefined> {
-    const [article] = await this.db.select().from(articles).where(eq(articles.url, url));
+    const [article] = await this.db
+      .select()
+      .from(articles)
+      .where(eq(articles.url, url));
     return article || undefined;
   }
 
@@ -639,10 +775,17 @@ export class DatabaseStorage implements IStorage {
 
     const stats = result[0];
     const totalArticles = Number(stats.totalArticles) || 0;
-    
+
     if (totalArticles === 0) {
-      const feedCreatedTime = feed.createdAt ? (feed.createdAt instanceof Date ? feed.createdAt.getTime() : new Date(feed.createdAt).getTime()) : Date.now();
-      const daysSinceCreated = Math.max(1, Math.floor((Date.now() - feedCreatedTime) / (1000 * 60 * 60 * 24)));
+      const feedCreatedTime = feed.createdAt
+        ? feed.createdAt instanceof Date
+          ? feed.createdAt.getTime()
+          : new Date(feed.createdAt).getTime()
+        : Date.now();
+      const daysSinceCreated = Math.max(
+        1,
+        Math.floor((Date.now() - feedCreatedTime) / (1000 * 60 * 60 * 24)),
+      );
       return {
         totalArticles: 0,
         articlesPerDay: 0,
@@ -659,25 +802,33 @@ export class DatabaseStorage implements IStorage {
       const ts = timestamp < 10000000000 ? timestamp * 1000 : timestamp;
       return new Date(ts);
     };
-    
+
     const lastArticleDate = convertTimestamp(stats.lastArticleTimestamp);
     const firstArticleDate = convertTimestamp(stats.firstArticleTimestamp);
-    
+
     // Calculate days since feed creation using article dates
     const now = Date.now();
     let daysSinceCreated = 1;
-    
+
     if (firstArticleDate && lastArticleDate) {
       // Calculate days between first and last article
       const timeDiff = lastArticleDate.getTime() - firstArticleDate.getTime();
-      const daysBetweenArticles = Math.max(1, Math.ceil(timeDiff / (1000 * 60 * 60 * 24)));
+      const daysBetweenArticles = Math.max(
+        1,
+        Math.ceil(timeDiff / (1000 * 60 * 60 * 24)),
+      );
       daysSinceCreated = daysBetweenArticles;
     } else if (firstArticleDate) {
       // Calculate days from first article to now
-      daysSinceCreated = Math.max(1, Math.ceil((now - firstArticleDate.getTime()) / (1000 * 60 * 60 * 24)));
+      daysSinceCreated = Math.max(
+        1,
+        Math.ceil((now - firstArticleDate.getTime()) / (1000 * 60 * 60 * 24)),
+      );
     }
-    
-    const articlesPerDay = Number((totalArticles / daysSinceCreated).toFixed(2));
+
+    const articlesPerDay = Number(
+      (totalArticles / daysSinceCreated).toFixed(2),
+    );
 
     return {
       totalArticles,
@@ -699,12 +850,12 @@ export class DatabaseStorage implements IStorage {
     const oldArticleCondition = or(
       and(
         sql`${articles.publishedAt} IS NOT NULL`,
-        sql`${articles.publishedAt} < ${cutoffTimestamp}`
+        sql`${articles.publishedAt} < ${cutoffTimestamp}`,
       ),
       and(
         sql`${articles.publishedAt} IS NULL`,
-        sql`${articles.createdAt} < ${cutoffTimestamp}`
-      )
+        sql`${articles.createdAt} < ${cutoffTimestamp}`,
+      ),
     );
 
     // Delete read articles that are not bookmarked and are old
@@ -714,10 +865,10 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(articles.isRead, true),
           eq(articles.isBookmarked, false),
-          oldArticleCondition
-        )
+          oldArticleCondition,
+        ),
       );
-    
+
     console.log(`Cleaned up ${result.changes || 0} old read articles.`);
     return result.changes || 0;
   }
@@ -727,30 +878,51 @@ export class DatabaseStorage implements IStorage {
       .delete(articles)
       .where(isNull(articles.publishedAt));
 
-    console.log(`Deleted ${result.changes || 0} articles with null publishedAt.`);
+    console.log(
+      `Deleted ${result.changes || 0} articles with null publishedAt.`,
+    );
     return result.changes || 0;
   }
 
   async getQueuedArticles(): Promise<Article[]> {
-    return await this.db.select().from(articles).where(eq(articles.isQueued, true));
+    return await this.db
+      .select()
+      .from(articles)
+      .where(eq(articles.isQueued, true));
   }
-
 
   async updateArticlesAsPublished(ids: string[]): Promise<void> {
     if (ids.length === 0) return;
     console.log(`Updating ${ids.length} articles as published.`);
-    await this.db.update(articles)
+    await this.db
+      .update(articles)
       .set({ isRead: true, isQueued: false })
       .where(inArray(articles.id, ids));
   }
 
+  async updateArticlesAsReadByFeed(feedId: string): Promise<void> {
+    await this.db
+      .update(articles)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(articles.feedId, feedId),
+          or(eq(articles.isRead, false), isNull(articles.isRead)),
+        ),
+      );
+  }
+
   async getSetting(key: string): Promise<string | undefined> {
-    const result = await this.db.select().from(settings).where(eq(settings.key, key));
+    const result = await this.db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, key));
     return result[0]?.value;
   }
 
   async setSetting(key: string, value: string): Promise<void> {
-    await this.db.insert(settings)
+    await this.db
+      .insert(settings)
       .values({ key, value })
       .onConflictDoUpdate({ target: settings.key, set: { value } });
   }
