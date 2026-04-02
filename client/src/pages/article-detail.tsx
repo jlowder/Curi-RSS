@@ -20,7 +20,8 @@ import {
   Globe,
   Info,
   FlaskConical,
-  MessageSquare
+  MessageSquare,
+  ShieldAlert
 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
@@ -61,6 +62,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   const [summary, setSummary] = useState<string | null>(null);
   const [referencedInfo, setReferencedInfo] = useState<string | null>(null);
   const [deepResearch, setDeepResearch] = useState<string | null>(null);
+  const [counterpoints, setCounterpoints] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
 
   const { data: article, isLoading, error, refetch } = useQuery<ArticleWithFeed>({
@@ -114,6 +116,29 @@ export default function ArticleDetail({}: ArticleDetailProps) {
     onError: (error: Error) => {
       toast({
         title: "AI Summarization Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const counterpointsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/articles/${id}/counterpoints`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || "Failed to get counterpoints");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setCounterpoints(data.counterpoints);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "AI Counterpoints Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -455,6 +480,18 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                         {deepResearchMutation.isPending ? "Generating..." : "Deep Research"}
                       </Button>
                     )}
+                    {llmConfig.counterpointsEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => counterpointsMutation.mutate()}
+                        disabled={counterpointsMutation.isPending}
+                        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+                      >
+                        <ShieldAlert className="w-4 h-4 mr-2" />
+                        {counterpointsMutation.isPending ? "Generating..." : "Counterpoints"}
+                      </Button>
+                    )}
                     {llmConfig.discussEnabled && (
                       <Button
                         variant="outline"
@@ -505,6 +542,18 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                   >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {deepResearch}
+                    </ReactMarkdown>
+                  </CollapsibleSection>
+                </div>
+              )}
+              {counterpoints && (
+                <div className="mt-4">
+                  <CollapsibleSection
+                    title="Counterpoints"
+                    icon={<ShieldAlert className="w-5 h-5 text-orange-400" />}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {counterpoints}
                     </ReactMarkdown>
                   </CollapsibleSection>
                 </div>

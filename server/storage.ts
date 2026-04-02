@@ -1,16 +1,17 @@
-import {
-  type Feed,
-  type InsertFeed,
-  type Article,
-  type InsertArticle,
-  type UpdateArticle,
-  type FeedWithUnreadCount,
-  type ArticleWithFeed,
-  type ArticleStats,
-  type FeedStats,
-  settings,
-  LlmConfig,
-} from "@shared/schema";
+import { type Feed,
+        type InsertFeed,
+        type Article,
+        type InsertArticle,
+        type UpdateArticle,
+        type FeedWithUnreadCount,
+        type ArticleWithFeed,
+        type ArticleStats,
+        type FeedStats,
+        settings,
+        LlmConfig,
+        DEFAULT_PROMPTS
+       } from "@shared/schema";
+
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -941,29 +942,34 @@ export class DatabaseStorage implements IStorage {
       "additionalInfoEnabled",
       "deepResearchEnabled",
       "discussEnabled",
+      "counterpointsEnabled",
+      "counterpointsPrompt",
     ];
     const settingsList = await Promise.all(
       keys.map((key) => this.getSetting(`llm_${key}`)),
     );
+
+    const configMap: Record<string, string | undefined> = {};
+    keys.forEach((key, index) => {
+      configMap[key] = settingsList[index];
+    });
+
     return {
-      enabled:
-        settingsList[0] === undefined ? true : settingsList[0] === "true",
-      endpoint: settingsList[1] ?? undefined,
-      prompt: settingsList[2] ?? undefined,
-      additionalInfoPrompt: settingsList[3] ?? undefined,
-      deepResearchPrompt: settingsList[4] ?? undefined,
-      discussPrompt: settingsList[5] ?? undefined,
-      max_tokens: settingsList[6] ? parseInt(settingsList[6], 10) : undefined,
-      temperature: settingsList[7] ? parseFloat(settingsList[7]) : undefined,
-      llmModel: settingsList[8] ?? undefined,
-      summarizeEnabled:
-        settingsList[9] === undefined ? true : settingsList[9] === "true",
-      additionalInfoEnabled:
-        settingsList[10] === undefined ? true : settingsList[10] === "true",
-      deepResearchEnabled:
-        settingsList[11] === undefined ? true : settingsList[11] === "true",
-      discussEnabled:
-        settingsList[12] === undefined ? true : settingsList[12] === "true",
+      enabled: configMap.enabled === undefined ? true : configMap.enabled === "true",
+      endpoint: configMap.endpoint,
+      prompt: configMap.prompt || DEFAULT_PROMPTS.summarize,
+      additionalInfoPrompt: configMap.additionalInfoPrompt || DEFAULT_PROMPTS.additionalInfo,
+      deepResearchPrompt: configMap.deepResearchPrompt || DEFAULT_PROMPTS.deepResearch,
+      discussPrompt: configMap.discussPrompt || DEFAULT_PROMPTS.discuss,
+      max_tokens: configMap.max_tokens ? parseInt(configMap.max_tokens, 10) : undefined,
+      temperature: configMap.temperature ? parseFloat(configMap.temperature) : undefined,
+      llmModel: configMap.llmModel,
+      summarizeEnabled: configMap.summarizeEnabled === undefined ? true : configMap.summarizeEnabled === "true",
+      additionalInfoEnabled: configMap.additionalInfoEnabled === undefined ? true : configMap.additionalInfoEnabled === "true",
+      deepResearchEnabled: configMap.deepResearchEnabled === undefined ? true : configMap.deepResearchEnabled === "true",
+      discussEnabled: configMap.discussEnabled === undefined ? true : configMap.discussEnabled === "true",
+      counterpointsEnabled: configMap.counterpointsEnabled === undefined ? true : configMap.counterpointsEnabled === "true",
+      counterpointsPrompt: configMap.counterpointsPrompt || DEFAULT_PROMPTS.counterpoints,
     };
   }
 }
