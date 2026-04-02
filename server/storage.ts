@@ -96,7 +96,9 @@ export class MemStorage implements IStorage {
     const feeds = Array.from(this.feeds.values());
     return feeds.map((feed) => {
       const unreadCount = Array.from(this.articles.values()).filter(
-        (article) => article.feedId === feed.id && !article.isRead,
+        (article) =>
+          article.feedId === feed.id &&
+          (!article.isRead || article.isRead === null),
       ).length;
       return { ...feed, unreadCount };
     });
@@ -189,7 +191,9 @@ export class MemStorage implements IStorage {
     if (category) {
       switch (category) {
         case "unread":
-          articles = articles.filter((article) => !article.isRead);
+          articles = articles.filter(
+            (article) => !article.isRead || article.isRead === null,
+          );
           break;
         case "read":
           articles = articles.filter(
@@ -202,8 +206,8 @@ export class MemStorage implements IStorage {
       }
     }
 
-    // Filter by specific feed only when in unread category
-    if (feedId && feedId !== "all" && (!category || category === "unread")) {
+    // Filter by specific feed when a feedId is provided (except for "all")
+    if (feedId && feedId !== "all") {
       articles = articles.filter((article) => article.feedId === feedId);
     }
 
@@ -396,7 +400,10 @@ export class MemStorage implements IStorage {
   async updateArticlesAsReadByFeed(feedId: string): Promise<void> {
     const articles = Array.from(this.articles.values());
     articles.forEach((article) => {
-      if (article.feedId === feedId && !article.isRead) {
+      if (
+        article.feedId === feedId &&
+        (!article.isRead || article.isRead === null)
+      ) {
         article.isRead = true;
         this.articles.set(article.id, article);
       }
@@ -495,7 +502,10 @@ export class DatabaseStorage implements IStorage {
       .from(feeds)
       .leftJoin(
         articles,
-        and(eq(articles.feedId, feeds.id), eq(articles.isRead, false)),
+        and(
+          eq(articles.feedId, feeds.id),
+          or(eq(articles.isRead, false), isNull(articles.isRead)),
+        ),
       )
       .where(eq(feeds.isActive, true))
       .groupBy(feeds.id)
@@ -638,7 +648,7 @@ export class DatabaseStorage implements IStorage {
 
     // Handle reading status categories with priority: saved > read > unread
     if (category === "unread") {
-      conditions.push(eq(articles.isRead, false));
+      conditions.push(or(eq(articles.isRead, false), isNull(articles.isRead)));
     } else if (category === "read") {
       conditions.push(
         and(eq(articles.isRead, true), eq(articles.isBookmarked, false))!,
@@ -678,8 +688,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(articles)
       .innerJoin(feeds, eq(articles.feedId, feeds.id))
-      .where(and(...conditions))
-      .orderBy(desc(articles.publishedAt));
+      .where(and(...conditions));
 
     return result;
   }
@@ -890,11 +899,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateArticlesAsReadByFeed(feedId: string): Promise<void> {
-    console.log(`Updating articles as read for feed ${feedId}`);
     await this.db
       .update(articles)
       .set({ isRead: true })
-      .where(and(eq(articles.feedId, feedId), eq(articles.isRead, false)));
+      .where(
+        and(
+          eq(articles.feedId, feedId),
+          or(eq(articles.isRead, false), isNull(articles.isRead)),
+        ),
+      );
   }
 
   async getSetting(key: string): Promise<string | undefined> {
