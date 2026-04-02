@@ -34,6 +34,7 @@ This application includes AI-powered features for articles:
 - **AI Summary**: Generates a summary of the article.
 - **Referenced Information**: Extracts and explains referenced entities.
 - **Deep Research**: Generates research prompts based on the article.
+- **Counterpoints**: Generates alternative perspectives or counterarguments to the article content.
 - **AI Discuss**: An interactive chat interface to discuss the article content.
 
 ### Enabling AI Features
