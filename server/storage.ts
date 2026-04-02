@@ -688,7 +688,8 @@ export class DatabaseStorage implements IStorage {
       })
       .from(articles)
       .innerJoin(feeds, eq(articles.feedId, feeds.id))
-      .where(and(...conditions));
+      .where(and(...conditions))
+      .orderBy(desc(articles.publishedAt));
 
     return result;
   }
