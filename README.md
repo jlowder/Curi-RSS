@@ -45,10 +45,10 @@ To use AI features, you must configure an LLM provider:
 3. Go to the **LLM Configuration** section.
 4. Toggle **Enable LLM features**.
 5. Provide your **LLM Endpoint** (e.g., `https://api.openai.com/v1`) and **API Key**.
-6. (Optional) Customize the prompts for each AI function.
+6. (Optional) Enable/disable each AI function, and customize the prompt used for it.
 7. Click **Save Changes**.
 
-Once enabled, AI buttons will appear in the article detail view.
+Once enabled, AI buttons will appear in the article detail view for every enabled feature.
 
 ## Development
 
