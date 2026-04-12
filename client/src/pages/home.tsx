@@ -23,6 +23,16 @@ export default function Home() {
 
   // Load grid size and category from localStorage/URL on mount
   useEffect(() => {
+    const savedGridSize = localStorage.getItem("articleGridSize");
+    if (savedGridSize) {
+      setGridSize(parseInt(savedGridSize));
+    }
+
+    const savedViewMode = localStorage.getItem("viewMode");
+    if (savedViewMode) {
+      setViewMode(savedViewMode as "grid" | "list");
+    }
+
     const searchParams = new URLSearchParams(window.location.search);
     const category = searchParams.get("category");
     const feed = searchParams.get("feed");
