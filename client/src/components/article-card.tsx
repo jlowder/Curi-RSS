@@ -20,12 +20,14 @@ interface ArticleCardProps {
   article: ArticleWithFeed;
   viewMode?: "grid" | "list";
   selectedCategory: string;
+  selectedFeedId: string;
 }
 
 export function ArticleCard({
   article,
   viewMode = "grid",
   selectedCategory,
+  selectedFeedId,
 }: ArticleCardProps) {
   const queryClient = useQueryClient();
   const [imageError, setImageError] = useState(false);
@@ -75,7 +77,10 @@ export function ArticleCard({
   const handleViewInternalArticle = (e: React.MouseEvent) => {
     e.stopPropagation();
     // Just navigate to internal article view - don't mark as read yet
-    setLocation(`/article/${article.id}?from=${selectedCategory}`);
+    // Include both feed and category in the URL to preserve selection
+    setLocation(
+      `/article/${article.id}?from=${selectedCategory}&feed=${selectedFeedId}`,
+    );
   };
 
   const handleOpenExternal = (e: React.MouseEvent) => {

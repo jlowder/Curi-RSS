@@ -23,38 +23,33 @@ export default function Home() {
 
   // Load grid size and category from localStorage/URL on mount
   useEffect(() => {
-    const savedGridSize = localStorage.getItem('articleGridSize');
-    if (savedGridSize) {
-      setGridSize(parseInt(savedGridSize));
-    }
+    const searchParams = new URLSearchParams(window.location.search);
+    const category = searchParams.get("category");
+    const feed = searchParams.get("feed");
 
-    const savedViewMode = localStorage.getItem('viewMode');
-    if (savedViewMode) {
-      setViewMode(savedViewMode as "grid" | "list");
+    if (category) {
+      setSelectedCategory(category);
     }
-
-    const params = new URLSearchParams(window.location.search);
-    const categoryFromUrl = params.get('category');
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl);
+    if (feed && feed !== "all") {
+      setSelectedFeedId(feed);
     }
   }, []);
 
   // Save grid size to localStorage when it changes
   const handleGridSizeChange = (size: number) => {
     setGridSize(size);
-    localStorage.setItem('articleGridSize', size.toString());
+    localStorage.setItem("articleGridSize", size.toString());
   };
 
   const handleViewModeChange = (mode: "grid" | "list") => {
     setViewMode(mode);
-    localStorage.setItem('viewMode', mode);
+    localStorage.setItem("viewMode", mode);
   };
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    // Reset feed selection when changing categories for better UX
-    setSelectedFeedId("all");
+    // When changing category, preserve the feed selection.
+    // The feed should only be reset when explicitly selecting "All Articles" from the sidebar.
   };
 
   const handleEditFeed = (feed: Feed) => {

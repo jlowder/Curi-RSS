@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowLeft, 
-  ExternalLink, 
-  Eye, 
-  EyeOff, 
-  Bookmark, 
+import {
+  ArrowLeft,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Bookmark,
   Clock,
   User,
   Calendar,
@@ -21,7 +21,7 @@ import {
   Info,
   FlaskConical,
   MessageSquare,
-  ShieldAlert
+  ShieldAlert,
 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
@@ -29,9 +29,9 @@ import { toast } from "@/hooks/use-toast";
 import { truncate } from "@/lib/utils";
 import type { ArticleWithFeed, LlmConfig } from "@shared/schema";
 import { useState } from "react";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import DOMPurify from 'dompurify';
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import DOMPurify from "dompurify";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { AiChatSection } from "@/components/ai-chat-section";
 
@@ -43,8 +43,28 @@ function SafeHtmlContent({ content }: { content: string | null }) {
   }
 
   const clean = DOMPurify.sanitize(content, {
-    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code'],
-    ALLOWED_ATTR: ['href']
+    ALLOWED_TAGS: [
+      "p",
+      "br",
+      "b",
+      "i",
+      "em",
+      "strong",
+      "ul",
+      "ol",
+      "li",
+      "a",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "blockquote",
+      "pre",
+      "code",
+    ],
+    ALLOWED_ATTR: ["href"],
   });
 
   return (
@@ -65,7 +85,12 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   const [counterpoints, setCounterpoints] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
 
-  const { data: article, isLoading, error, refetch } = useQuery<ArticleWithFeed>({
+  const {
+    data: article,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<ArticleWithFeed>({
     queryKey: [`/api/articles/${id}`],
     enabled: !!id,
     refetchOnMount: true,
@@ -77,7 +102,11 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   });
 
   const updateArticleMutation = useMutation({
-    mutationFn: async (updates: { isRead?: boolean; isBookmarked?: boolean; isQueued?: boolean }) => {
+    mutationFn: async (updates: {
+      isRead?: boolean;
+      isBookmarked?: boolean;
+      isQueued?: boolean;
+    }) => {
       const response = await fetch(`/api/articles/${id}`, {
         method: "PATCH",
         headers: {
@@ -106,7 +135,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.details || errorData.error || "Failed to summarize article");
+        throw new Error(
+          errorData.details || errorData.error || "Failed to summarize article",
+        );
       }
       return response.json();
     },
@@ -119,7 +150,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   const counterpointsMutation = useMutation({
@@ -129,7 +160,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.details || errorData.error || "Failed to get counterpoints");
+        throw new Error(
+          errorData.details || errorData.error || "Failed to get counterpoints",
+        );
       }
       return response.json();
     },
@@ -142,7 +175,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   const referencedInfoMutation = useMutation({
@@ -152,7 +185,11 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.details || errorData.error || "Failed to get referenced info");
+        throw new Error(
+          errorData.details ||
+            errorData.error ||
+            "Failed to get referenced info",
+        );
       }
       return response.json();
     },
@@ -165,7 +202,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   const deepResearchMutation = useMutation({
@@ -175,7 +212,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.details || errorData.error || "Failed to get deep research");
+        throw new Error(
+          errorData.details || errorData.error || "Failed to get deep research",
+        );
       }
       return response.json();
     },
@@ -188,12 +227,17 @@ export default function ArticleDetail({}: ArticleDetailProps) {
         description: error.message,
         variant: "destructive",
       });
-    }
+    },
   });
 
   // Mark article as read after viewing for a few seconds (if not already read)
   useEffect(() => {
-    if (article && !article.isRead && article.content && article.content.length > 100) {
+    if (
+      article &&
+      !article.isRead &&
+      article.content &&
+      article.content.length > 100
+    ) {
       const timer = setTimeout(() => {
         updateArticleMutation.mutate({ isRead: true });
       }, 3000); // Mark as read after 3 seconds of viewing with content
@@ -203,8 +247,13 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   }, [article, updateArticleMutation]);
 
   const handleBack = () => {
-    const fromCategory = new URLSearchParams(window.location.search).get("from");
-    if (fromCategory) {
+    const searchParams = new URLSearchParams(window.location.search);
+    const fromCategory = searchParams.get("from");
+    const fromFeed = searchParams.get("feed");
+
+    if (fromCategory && fromFeed) {
+      setLocation(`/?category=${fromCategory}&feed=${fromFeed}`);
+    } else if (fromCategory) {
       setLocation(`/?category=${fromCategory}`);
     } else {
       setLocation("/");
@@ -254,8 +303,8 @@ export default function ArticleDetail({}: ArticleDetailProps) {
     return (
       <div className="min-h-screen bg-gray-950 text-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-8">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={handleBack}
             className="mb-6 text-gray-400 hover:text-white"
           >
@@ -265,7 +314,10 @@ export default function ArticleDetail({}: ArticleDetailProps) {
           <Card className="bg-gray-800 border-gray-700 p-8 text-center">
             <div className="text-gray-400 mb-4">
               <div className="text-xl mb-2">Article not found</div>
-              <div className="text-sm">The article you're looking for doesn't exist or has been removed.</div>
+              <div className="text-sm">
+                The article you're looking for doesn't exist or has been
+                removed.
+              </div>
             </div>
             <Button onClick={handleBack} variant="default">
               Return to articles
@@ -278,7 +330,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const formatDate = (date: Date | null | string) => {
     if (!date) return "Unknown date";
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    const dateObj = typeof date === "string" ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return "Unknown date";
     return format(dateObj, "MMMM d, yyyy 'at' h:mm a");
   };
@@ -290,8 +342,8 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header with navigation and actions */}
         <div className="flex items-center justify-between mb-8">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={handleBack}
             className="text-gray-400 hover:text-white"
             data-testid="button-back"
@@ -299,7 +351,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to articles
           </Button>
-          
+
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
@@ -325,12 +377,16 @@ export default function ArticleDetail({}: ArticleDetailProps) {
               title={article.isRead ? "Mark as unread" : "Mark as read"}
               data-testid="button-toggle-read"
             >
-              {article.isRead ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {article.isRead ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
               <span className="ml-2 hidden sm:inline">
                 {article.isRead ? "Mark unread" : "Mark read"}
               </span>
             </Button>
-            
+
             <Button
               variant="outline"
               size="sm"
@@ -349,7 +405,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                 {article.isBookmarked ? "Saved" : "Save"}
               </span>
             </Button>
-            
+
             <Button
               variant="outline"
               size="sm"
@@ -369,7 +425,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
           <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
             {article.title}
           </h1>
-          
+
           {/* Article meta information */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6">
             {article.publishedAt && (
@@ -378,19 +434,19 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                 {formatDate(article.publishedAt)}
               </div>
             )}
-            
+
             {article.author && (
               <div className="flex items-center">
                 <User className="w-4 h-4 mr-1" />
                 {article.author}
               </div>
             )}
-            
+
             {article.feed && (
-                <div className="flex items-center">
-                    <Globe className="w-4 h-4 mr-1" />
-                    {article.feed.title}
-                </div>
+              <div className="flex items-center">
+                <Globe className="w-4 h-4 mr-1" />
+                {article.feed.title}
+              </div>
             )}
             {article.category && (
               <Badge variant="secondary" className="bg-gray-800 text-gray-300">
@@ -414,7 +470,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                 alt={article.title}
                 className="w-full max-h-96 object-cover rounded-lg shadow-lg"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none";
                 }}
               />
             </div>
@@ -429,7 +485,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
             <div className="text-center py-12">
               <div className="flex items-center justify-center space-x-3 mb-4">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                <span className="text-gray-400">Extracting full content...</span>
+                <span className="text-gray-400">
+                  Extracting full content...
+                </span>
               </div>
               <div className="text-sm text-gray-500">
                 This may take a moment while we fetch the complete article.
@@ -453,7 +511,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                         className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
                       >
                         <Sparkles className="w-4 h-4 mr-2" />
-                        {summarizeMutation.isPending ? "Summarizing..." : "AI Summary"}
+                        {summarizeMutation.isPending
+                          ? "Summarizing..."
+                          : "AI Summary"}
                       </Button>
                     )}
                     {llmConfig.additionalInfoEnabled && (
@@ -465,7 +525,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                         className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
                       >
                         <Info className="w-4 h-4 mr-2" />
-                        {referencedInfoMutation.isPending ? "Getting Info..." : "Referenced Information"}
+                        {referencedInfoMutation.isPending
+                          ? "Getting Info..."
+                          : "Referenced Information"}
                       </Button>
                     )}
                     {llmConfig.deepResearchEnabled && (
@@ -477,7 +539,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                         className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
                       >
                         <FlaskConical className="w-4 h-4 mr-2" />
-                        {deepResearchMutation.isPending ? "Generating..." : "Deep Research"}
+                        {deepResearchMutation.isPending
+                          ? "Generating..."
+                          : "Deep Research"}
                       </Button>
                     )}
                     {llmConfig.counterpointsEnabled && (
@@ -489,7 +553,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                         className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
                       >
                         <ShieldAlert className="w-4 h-4 mr-2" />
-                        {counterpointsMutation.isPending ? "Generating..." : "Counterpoints"}
+                        {counterpointsMutation.isPending
+                          ? "Generating..."
+                          : "Counterpoints"}
                       </Button>
                     )}
                     {llmConfig.discussEnabled && (
@@ -566,11 +632,13 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                 <ExternalLink className="w-12 h-12 mx-auto mb-4 text-gray-600" />
                 <div className="text-lg mb-2">Full content not available</div>
                 <div className="text-sm max-w-md mx-auto mb-4">
-                  This article contains only a summary. The full content couldn't be extracted automatically.
+                  This article contains only a summary. The full content
+                  couldn't be extracted automatically.
                 </div>
                 {article.description && (
                   <div className="text-sm text-gray-300 max-w-md mx-auto mb-4 p-4 bg-gray-900 rounded border-l-4 border-blue-500">
-                    <strong>Summary:</strong> <SafeHtmlContent content={article.description} />
+                    <strong>Summary:</strong>{" "}
+                    <SafeHtmlContent content={article.description} />
                   </div>
                 )}
               </div>

@@ -12,16 +12,29 @@ interface ArticleGridProps {
   gridSize: number;
 }
 
-export function ArticleGrid({ selectedFeedId, selectedCategory, searchQuery, viewMode, gridSize }: ArticleGridProps) {
+export function ArticleGrid({
+  selectedFeedId,
+  selectedCategory,
+  searchQuery,
+  viewMode,
+  gridSize,
+}: ArticleGridProps) {
   useArticleSyncer();
   const { data: articles = [], isLoading } = useQuery<ArticleWithFeed[]>({
-    queryKey: ["/api/articles", { search: searchQuery, feedId: selectedFeedId, category: selectedCategory }],
+    queryKey: [
+      "/api/articles",
+      {
+        search: searchQuery,
+        feedId: selectedFeedId,
+        category: selectedCategory,
+      },
+    ],
   });
 
   // Generate dynamic grid classes based on gridSize
   const getGridClasses = () => {
     if (viewMode === "list") return "space-y-4";
-    
+
     const gridCols = {
       1: "grid-cols-1",
       2: "grid-cols-1 sm:grid-cols-2",
@@ -30,7 +43,7 @@ export function ArticleGrid({ selectedFeedId, selectedCategory, searchQuery, vie
       5: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
       6: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6",
     };
-    
+
     return `grid ${gridCols[gridSize as keyof typeof gridCols] || "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"} gap-6`;
   };
 
@@ -69,10 +82,15 @@ export function ArticleGrid({ selectedFeedId, selectedCategory, searchQuery, vie
     <div className="flex-1 overflow-y-auto p-6">
       <div className={getGridClasses()}>
         {articles.map((article) => (
-          <ArticleCard key={article.id} article={article} viewMode={viewMode} selectedCategory={selectedCategory} />
+          <ArticleCard
+            key={article.id}
+            article={article}
+            viewMode={viewMode}
+            selectedCategory={selectedCategory}
+            selectedFeedId={selectedFeedId}
+          />
         ))}
       </div>
-
     </div>
   );
 }
