@@ -47,14 +47,17 @@ export function AiChatSection({ articleId, onClose }: AiChatSectionProps) {
     if (messages.length === 0) {
       chatMutation.mutate([]);
     }
-    // Focus the input field on mount
-    const timer = setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 500);
-    return () => clearTimeout(timer);
   }, []);
+
+  // Focus input when AI finishes thinking or an error occurs
+  useEffect(() => {
+    if (!chatMutation.isPending && (messages.length > 0 || error)) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [chatMutation.isPending, messages.length, error]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
