@@ -54,7 +54,7 @@ export function AiChatSection({ articleId, onClose }: AiChatSectionProps) {
     if (!chatMutation.isPending && (messages.length > 0 || error)) {
       const timer = setTimeout(() => {
         inputRef.current?.focus();
-      }, 100);
+      }, 0);
       return () => clearTimeout(timer);
     }
   }, [chatMutation.isPending, messages.length, error]);
