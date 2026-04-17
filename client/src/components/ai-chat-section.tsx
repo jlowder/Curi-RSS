@@ -24,6 +24,7 @@ export function AiChatSection({ articleId, onClose }: AiChatSectionProps) {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const chatMutation = useMutation({
     mutationFn: async (currentMessages: Message[]) => {
@@ -47,6 +48,16 @@ export function AiChatSection({ articleId, onClose }: AiChatSectionProps) {
       chatMutation.mutate([]);
     }
   }, []);
+
+  // Focus input when AI finishes thinking or an error occurs
+  useEffect(() => {
+    if (!chatMutation.isPending && (messages.length > 0 || error)) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [chatMutation.isPending, messages.length, error]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -155,11 +166,13 @@ export function AiChatSection({ articleId, onClose }: AiChatSectionProps) {
 
       <form onSubmit={handleSend} className="p-4 bg-gray-800 border-t border-gray-700 flex space-x-2">
         <Input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your message..."
           className="bg-gray-950 border-gray-700 text-gray-200"
           disabled={chatMutation.isPending}
+          autoFocus
         />
         <Button type="submit" size="sm" disabled={chatMutation.isPending || !input.trim()}>
           <Send className="w-4 h-4" />
