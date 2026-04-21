@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/github/license/jlowder/Curi-RSS?branch=main)](https://github.com/jlowder/Curi-RSS/blob/main/LICENSE)
 [![Version](https://img.shields.io/github/package-json/v/jlowder/Curi-RSS)](https://github.com/jlowder/Curi-RSS)
-[![CI/CD](https://img.shields.io/github/actions/workflow/status/jlowder/Curi-RSS/main.yml?label=CI/CD)](https://github.com/jlowder/Curi-RSS/actions)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/jlowder/Curi-RSS/publish.yml?label=CI/CD)](https://github.com/jlowder/Curi-RSS/actions)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://react.dev/)
