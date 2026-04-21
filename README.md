@@ -10,6 +10,11 @@
 
 A full-stack RSS Reader application with AI-powered features.
 
+## Preview
+
+![Curi RSS Reader Interface](doc/screenshot.png)
+*The Curi RSS Reader interface showing article feed, AI features panel, and article detail view.*
+
 ## Getting Started
 
 ### Prerequisites
@@ -35,6 +40,25 @@ If you have made changes to the source code and want to see them in the running 
 docker compose build --no-cache
 docker compose up -d
 ```
+
+### Running from GHCR
+
+You can also run the application directly from the GitHub Container Registry (GHCR) without building locally:
+
+1. **Create a Docker named volume** (required for data persistence):
+   ```bash
+   docker volume create rss_data
+   ```
+
+2. **Pull and run the image**:
+   ```bash
+   docker run -d \
+     -p 7016:7016 \
+     -v rss_data:/app/data \
+     ghcr.io/jlowder/curi-rss:main
+   ```
+
+The application will be available at `http://localhost:7016`.
 
 ## AI Features
 
