@@ -1,6 +1,6 @@
 # Curi RSS Reader
 
-[![License](https://img.shields.io/github/license/jlowdermilk/Curi-RSS)](https://github.com/jlowdermilk/Curi-RSS/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/jlowdermilk/Curi-RSS?branch=main)](https://github.com/jlowdermilk/Curi-RSS/blob/main/LICENSE)
 [![Version](https://img.shields.io/github/package-json/v/jlowdermilk/Curi-RSS)](https://github.com/jlowdermilk/Curi-RSS)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/jlowdermilk/Curi-RSS/main.yml?label=CI/CD)](https://github.com/jlowdermilk/Curi-RSS/actions)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
