@@ -1,5 +1,13 @@
 # Curi RSS Reader
 
+[![License](https://img.shields.io/github/license/jlowdermilk/Curi-RSS)](https://github.com/jlowdermilk/Curi-RSS/blob/main/LICENSE)
+[![Version](https://img.shields.io/github/package-json/v/jlowdermilk/Curi-RSS)](https://github.com/jlowdermilk/Curi-RSS)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/jlowdermilk/Curi-RSS/main.yml?label=CI/CD)](https://github.com/jlowdermilk/Curi-RSS/actions)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://react.dev/)
+[![SQLite](https://img.shields.io/badge/SQLite-07405E?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+
 A full-stack RSS Reader application with AI-powered features.
 
 ## Getting Started
