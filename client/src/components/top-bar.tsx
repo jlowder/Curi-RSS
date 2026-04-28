@@ -115,14 +115,15 @@ export function TopBar({ onMenuClick, selectedFeedId, selectedCategory, searchQu
               placeholder="Search articles..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 w-full sm:w-48 lg:w-80 pl-10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 w-full sm:w-48 lg:w-80 pl-10 pr-10 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => onSearchChange('')}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 hover:bg-gray-700 rounded-full p-1 transition-colors"
-                title="Clear search"
+                aria-label="Clear search"
               >
                 <X className="w-4 h-4" />
               </button>
