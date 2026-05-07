@@ -25,7 +25,14 @@ import puppeteer from "puppeteer";
 import { PDFDocument } from "pdf-lib";
 import TurndownService from "turndown";
 
-const parser = new Parser();
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+
+const parser = new Parser({
+  headers: {
+    "User-Agent": DEFAULT_USER_AGENT,
+  },
+});
 const turndownService = new TurndownService();
 
 const KEYTAR_SERVICE = "curirss";
@@ -1684,7 +1691,11 @@ ${truncatedContent}`;
 
       let response;
       try {
-        response = await fetch(fullUrl);
+        response = await fetch(fullUrl, {
+          headers: {
+            "User-Agent": DEFAULT_USER_AGENT,
+          },
+        });
       } catch (e) {
         return res.status(400).json({ error: "Failed to fetch URL" });
       }
