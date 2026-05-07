@@ -2,6 +2,7 @@
   "name": "rest-express",
   "version": "1.0.0",
   "type": "module",
+  "main": "dist/electron/main.js",
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
@@ -9,7 +10,27 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "test": "vitest",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:7016 && npx tsc electron/main.ts --outDir dist/electron --module esnext --target esnext --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck && electron .\"",
+    "electron:build": "npm run build && npx tsc electron/main.ts --outDir dist/electron --module esnext --target esnext --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck && electron-builder"
+  },
+  "build": {
+    "appId": "com.curirss.app",
+    "productName": "Curi RSS",
+    "electronVersion": "32.0.0",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "News"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -107,14 +128,19 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "drizzle-kit": "^0.30.4",
+    "electron": "^32.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-is-dev": "^3.0.1",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.21.0",
     "typescript": "5.6.3",
     "vite": "^5.4.19",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wait-on": "^8.0.1"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
