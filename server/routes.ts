@@ -32,7 +32,6 @@ const parser = new Parser({
   headers: {
     "User-Agent": DEFAULT_USER_AGENT,
   },
-  timeout: 10000,
 });
 const turndownService = new TurndownService();
 
@@ -1692,11 +1691,15 @@ ${truncatedContent}`;
 
       let response;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         response = await fetch(fullUrl, {
           headers: {
             "User-Agent": DEFAULT_USER_AGENT,
           },
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
       } catch (e) {
         return res.status(400).json({ error: "Failed to fetch URL" });
       }
