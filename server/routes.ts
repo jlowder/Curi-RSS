@@ -32,6 +32,7 @@ const parser = new Parser({
   headers: {
     "User-Agent": DEFAULT_USER_AGENT,
   },
+  timeout: 10000,
 });
 const turndownService = new TurndownService();
 
