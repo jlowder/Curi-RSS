@@ -157,7 +157,16 @@ export function TopBar({ onMenuClick, selectedFeedId, selectedCategory, searchQu
           {/* Grid Size Slider - only show in grid view */}
           {viewMode === "grid" && (
             <div className="flex items-center space-x-3 bg-gray-800 rounded-lg p-3">
-              <ZoomOut className="w-4 h-4 text-gray-400" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onGridSizeChange(Math.max(1, gridSize - 1))}
+                disabled={gridSize <= 1}
+                className="text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                aria-label="Decrease grid size"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </Button>
               <div className="flex items-center space-x-2">
                 <Slider
                   value={[gridSize]}
@@ -170,7 +179,16 @@ export function TopBar({ onMenuClick, selectedFeedId, selectedCategory, searchQu
                 />
                 <span className="text-xs text-gray-400 w-6 text-center">{gridSize}</span>
               </div>
-              <ZoomIn className="w-4 h-4 text-gray-400" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onGridSizeChange(Math.min(6, gridSize + 1))}
+                disabled={gridSize >= 6}
+                className="text-gray-400 hover:text-white disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                aria-label="Increase grid size"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </Button>
             </div>
           )}
 
