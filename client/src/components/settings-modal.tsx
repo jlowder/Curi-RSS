@@ -174,15 +174,15 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
             Manage your application settings.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <ScrollArea className="max-h-[60vh] px-1">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <ScrollArea className="flex-1 px-6">
             <Tabs defaultValue="email">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="email">Email</TabsTrigger>
@@ -457,7 +457,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </TabsContent>
           </Tabs>
           </ScrollArea>
-          <DialogFooter className="mt-4">
+          <DialogFooter className="p-6 pt-2 border-t">
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
