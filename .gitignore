@@ -8,5 +8,7 @@ vite.config.ts.*
 rss.db
 dev.log
 package-lock.json
+test-results/
+playwright-report/
 .genkit/
 .pi/

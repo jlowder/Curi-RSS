@@ -338,7 +338,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   const hasContent = article.content && article.content.length > 100;
 
   return (
-    <div className="h-dvh overflow-y-auto bg-gray-950 text-gray-100">
+    <div className="h-screen overflow-y-auto bg-gray-950 text-gray-100">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header with navigation and actions */}
         <div className="flex items-center justify-between mb-8">

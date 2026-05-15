@@ -32,7 +32,6 @@ test.describe('Layout and Usability Tests', () => {
     });
 
     // Check if the bottom-most fields are visible/accessible
-    // "Model Parameters" is at the bottom
     const modelParams = page.getByRole('button', { name: 'Model Parameters' });
     await expect(modelParams).toBeVisible();
 
@@ -41,11 +40,26 @@ test.describe('Layout and Usability Tests', () => {
     await expect(saveButton).toBeVisible();
   });
 
+  test('Home page grid should be scrollable', async ({ page }) => {
+    await page.goto('/');
+
+    // Wait for articles to load
+    const grid = page.locator('.grid, .space-y-4').first();
+    await expect(grid).toBeVisible({ timeout: 10000 });
+
+    // The actual scrollable container is the one with overflow-y-auto
+    const scrollContainer = page.locator('.flex-1.overflow-y-auto').first();
+    await expect(scrollContainer).toBeVisible();
+
+    // Verify it is actually scrollable (scrollHeight > clientHeight)
+    const isScrollable = await scrollContainer.evaluate((el) => el.scrollHeight > el.clientHeight);
+    expect(isScrollable).toBe(true);
+  });
+
   test('Article detail page should be scrollable', async ({ page }) => {
     await page.goto('/');
 
     // Wait for the grid to appear and click the first article
-    // Increase timeout for slow loads
     const firstArticle = page.locator('.grid > div, .space-y-4 > div').first();
     await expect(firstArticle).toBeVisible({ timeout: 10000 });
     await firstArticle.click();
