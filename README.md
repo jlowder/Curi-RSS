@@ -95,3 +95,33 @@ If you prefer to run the application locally for development:
    npm run dev
    ```
    The development server runs on port 7016.
+
+### Testing
+
+The project includes both unit/integration tests and end-to-end (E2E) tests.
+
+#### Unit and Integration Tests
+
+The backend logic and storage layer are tested using [Vitest](https://vitest.dev/).
+
+```bash
+npm run test
+```
+
+#### End-to-End (E2E) Tests
+
+Frontend layout and usability are tested using [Playwright](https://playwright.dev/). These tests verify that the settings dialog is fully functional and that articles remain scrollable.
+
+Before running E2E tests for the first time, install the required browsers:
+
+```bash
+npx playwright install chromium
+```
+
+To run the E2E tests:
+
+```bash
+npm run test:e2e
+```
+
+The E2E tests will automatically start the development server if it's not already running.
