@@ -81,7 +81,7 @@ export default function Home() {
         onEditFeed={handleEditFeed}
         onShowSettings={() => setShowSettingsModal(true)}
       />
-      <div className="flex-1 flex flex-col h-screen">
+      <div className="flex-1 flex flex-col h-screen min-w-0">
         <TopBar
           onMenuClick={() => setSidebarOpen(true)}
           selectedFeedId={selectedFeedId}

@@ -504,16 +504,16 @@ export function Sidebar({
               variant="ghost"
               onClick={() => refreshAllMutation.mutate()}
               disabled={refreshAllMutation.isPending}
-              className="text-gray-400 hover:text-white disabled:opacity-50 flex-grow flex items-center justify-center text-lg"
+              className="text-gray-400 hover:text-white disabled:opacity-50 flex-grow flex items-center justify-center"
               title={
                 refreshAllMutation.isPending
                   ? "Refreshing feeds..."
                   : "Refresh all feeds"
               }
             >
-              <span>{feeds.length} Feeds</span>
+              <span className="text-sm">{feeds.length} Feeds</span>
               <RefreshCw
-                className={`w-20 h-20 ml-5 ${
+                className={`w-4 h-4 ml-2 ${
                   refreshAllMutation.isPending ? "animate-spin" : ""
                 }`}
               />

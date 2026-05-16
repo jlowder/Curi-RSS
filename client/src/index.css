@@ -71,8 +71,16 @@
   }
   
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
     font-family: var(--font-sans), sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  html {
+    overflow: hidden;
+    height: 100vh;
   }
   
   /* Custom utilities for RSS reader */
