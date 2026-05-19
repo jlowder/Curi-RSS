@@ -1,7 +1,6 @@
 {
   "name": "rest-express",
   "version": "1.0.0",
-  "type": "module",
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
@@ -10,7 +9,16 @@
     "check": "tsc",
     "test": "vitest",
     "test:e2e": "npx playwright test",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build:main && npm run build:preload && vite build && electron-builder",
+    "electron:build:linux": "npm run build:main && npm run build:preload && vite build && electron-builder --linux --x64",
+    "electron:build:mac": "npm run build:main && npm run build:preload && vite build && electron-builder --mac",
+    "electron:build:win": "npm run build:main && npm run build:preload && vite build && electron-builder --win",
+    "electron:watch": "tsc --watch",
+    "electron:preload": "tsc -p src/preload/tsconfig.json",
+    "build:main": "tsc -p tsconfig.main.json && cp dist/index.js dist/main.js",
+    "build:preload": "tsc -p tsconfig.preload.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -91,7 +99,8 @@
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
     "zod": "^3.24.2",
-    "zod-validation-error": "^3.4.0"
+    "zod-validation-error": "^3.4.0",
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
@@ -109,6 +118,7 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
     "drizzle-kit": "^0.30.4",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
@@ -116,7 +126,10 @@
     "tsx": "^4.21.0",
     "typescript": "5.6.3",
     "vite": "^5.4.19",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wait-on": "^8.0.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

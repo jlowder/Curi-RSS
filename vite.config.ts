@@ -15,13 +15,21 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path.resolve(import.meta.dirname, "dist/renderer"),
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(import.meta.dirname, "client/index.html"),
+      },
+    },
   },
   server: {
+    port: 5173,
+    strictPort: true,
     fs: {
       strict: true,
       deny: ["**/.*"],
     },
   },
+  base: './',
 });

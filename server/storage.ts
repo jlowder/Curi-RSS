@@ -429,6 +429,7 @@ export class MemStorage implements IStorage {
       additionalInfoEnabled: true,
       deepResearchEnabled: true,
       discussEnabled: true,
+      counterpointsEnabled: false,
       discussPrompt:
         "Summarize this article in one sentence, and ask the user what they would like to discuss about it.",
     };
@@ -634,13 +635,14 @@ export class DatabaseStorage implements IStorage {
     let conditions = [eq(feeds.isActive, true)];
 
     if (query) {
-      conditions.push(
-        or(
-          like(articles.title, `%${query}%`),
-          like(articles.description, `%${query}%`),
-          like(articles.content, `%${query}%`),
-        )!,
+      const searchCondition = or(
+        like(articles.title, `%${query}%`),
+        like(articles.description, `%${query}%`),
+        like(articles.content, `%${query}%`),
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     if (feedId && feedId !== "all") {
@@ -649,11 +651,18 @@ export class DatabaseStorage implements IStorage {
 
     // Handle reading status categories with priority: saved > read > unread
     if (category === "unread") {
-      conditions.push(or(eq(articles.isRead, false), isNull(articles.isRead)));
+      const unreadCondition = or(eq(articles.isRead, false), isNull(articles.isRead));
+      if (unreadCondition) {
+        conditions.push(unreadCondition);
+      }
     } else if (category === "read") {
-      conditions.push(
-        and(eq(articles.isRead, true), eq(articles.isBookmarked, false))!,
+      const readCondition = and(
+        eq(articles.isRead, true),
+        eq(articles.isBookmarked, false),
       );
+      if (readCondition) {
+        conditions.push(readCondition);
+      }
     } else if (category === "saved") {
       conditions.push(eq(articles.isBookmarked, true));
     } else if (category === "queued") {
