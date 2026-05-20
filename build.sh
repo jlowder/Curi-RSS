@@ -17,6 +17,10 @@ cp dist/index.js dist/main.js
 echo "Compiling preload..."
 npx tsc -p tsconfig.preload.json
 
+# Build backend server
+echo "Compiling backend server..."
+npx esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outfile=dist/server.js
+
 # Build Vite renderer
 echo "Building Vite renderer..."
 npx vite build

@@ -45,12 +45,12 @@ const startServer = () => {
     return;
   }
 
-  // Path to the server executable (bundled with esbuild to dist/index.js)
-  const serverPath = path.join(__dirname, 'index.js');
+  // Path to the server executable (bundled with esbuild to dist/server.js)
+  const serverPath = path.join(__dirname, 'server.js');
 
   console.log('Starting backend server from:', serverPath);
 
-  serverProcess = spawn('node', [serverPath], {
+  serverProcess = spawn(process.execPath, [serverPath], {
     env: {
       ...process.env,
       NODE_ENV: 'production',
