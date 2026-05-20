@@ -30,8 +30,8 @@ if (!existsSync(process.env.DB_PATH!) && existsSync(originalDbPath)) {
   }
 }
 
-// Auto-updater setup (macOS only for now)
-const { autoUpdater } = require('electron-updater');
+// Auto-updater disabled to prevent GitHub API errors
+// const { autoUpdater } = require('electron-updater');
 
 const createWindow = () => {
   // Create the browser window
@@ -43,7 +43,7 @@ const createWindow = () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload.js'),
     },
     backgroundColor: '#1a1a1a',
     show: false,
@@ -56,7 +56,17 @@ const createWindow = () => {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    // Use loadURL with file:// protocol for the bundled app
+    // When bundled in asar, files are at /dist/renderer/index.html or /dist/client/index.html
+    // The renderer files are in asarUnpack at app.asar.unpacked/dist/renderer/
+    // We need to construct the proper file:// URL
+    const appPath = app.getAppPath();
+    const asarUnpackDir = path.join(path.dirname(appPath), 'app.asar.unpacked');
+    const rendererPath = path.join(asarUnpackDir, 'dist', 'renderer', 'index.html');
+    const clientPath = path.join(asarUnpackDir, 'dist', 'client', 'index.html');
+    const startUrl = existsSync(rendererPath) ? rendererPath : clientPath;
+    const fileUrl = `file://${startUrl}`;
+    mainWindow.loadURL(fileUrl);
   }
 
   // Show window when ready
@@ -134,36 +144,40 @@ const createTray = () => {
   });
 };
 
-const setupAutoUpdater = () => {
-  if (process.platform === 'darwin' || process.platform === 'win32' || process.platform === 'linux') {
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
-    
-    // Check for updates after app is ready
-    app.whenReady().then(() => {
-      autoUpdater.checkForUpdates();
-      
-      // Check for updates every hour
-      setInterval(() => {
-        autoUpdater.checkForUpdates();
-      }, 60 * 60 * 1000);
-    });
-    
-    autoUpdater.on('update-downloaded', () => {
-      autoUpdater.quitAndInstall();
-    });
-    
-    autoUpdater.on('error', (error: Error) => {
-      console.error('Auto-updater error:', error);
-    });
-  }
-};
+// Auto-updater disabled to prevent GitHub API errors
+// const setupAutoUpdater = () => {
+//   console.log('Auto-updater disabled');
+//   return;
+//   
+//   if (process.platform === 'darwin' || process.platform === 'win32' || process.platform === 'linux') {
+//     autoUpdater.autoDownload = true;
+//     autoUpdater.autoInstallOnAppQuit = true;
+//     
+//     // Check for updates after app is ready
+//     app.whenReady().then(() => {
+//       autoUpdater.checkForUpdates();
+//       
+//       // Check for updates every hour
+//       setInterval(() => {
+//         autoUpdater.checkForUpdates();
+//       }, 60 * 60 * 1000);
+//     });
+//     
+//     autoUpdater.on('update-downloaded', () => {
+//       autoUpdater.quitAndInstall();
+//     });
+//     
+//     autoUpdater.on('error', (error: Error) => {
+//       console.error('Auto-updater error:', error);
+//     });
+//   }
+// };
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   createWindow();
   createTray();
-  setupAutoUpdater();
+  // setupAutoUpdater(); // disabled
   
   // Handle activation on macOS
   app.on('activate', () => {

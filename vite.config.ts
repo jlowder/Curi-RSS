@@ -31,5 +31,5 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
-  base: './',
+  base: '/dist/renderer/',
 });

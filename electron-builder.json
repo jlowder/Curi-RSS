@@ -12,6 +12,10 @@
   "extraMetadata": {
     "main": "dist/main.js"
   },
+  "asarUnpack": [
+    "dist/renderer/**/*",
+    "dist/client/**/*"
+  ],
   "mac": {
     "category": "public.app-category.news",
     "target": ["dmg", "zip"],
@@ -51,10 +55,5 @@
         "type": "file"
       }
     ]
-  },
-  "publish": {
-    "provider": "github",
-    "owner": "jlowder",
-    "repo": "Curi-RSS"
   }
 }
