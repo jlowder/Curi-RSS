@@ -3,6 +3,21 @@ import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { spawn, ChildProcess } from 'child_process';
 
+// Single instance lock
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
 const fs = require('fs');
 const remoteMain = require('@electron/remote/main');
 remoteMain.initialize();
@@ -56,6 +71,7 @@ const startServer = () => {
       NODE_ENV: 'production',
       PORT: '7016',
       DB_PATH: process.env.DB_PATH,
+      ELECTRON_RUN_AS_NODE: '1',
     },
   });
 
@@ -69,6 +85,7 @@ const startServer = () => {
 
   serverProcess.on('close', (code) => {
     console.log(`Server process exited with code ${code}`);
+    serverProcess = null;
   });
 };
 
