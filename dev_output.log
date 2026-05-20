@@ -1,0 +1,13 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+✅ Database initialized successfully
+Cleaned up 0 old read articles.
+7:06:59 PM [express] serving on port 7016
+7:07:15 PM [express] GET /api/feeds 200 in 7ms :: []
+7:07:15 PM [express] GET /api/articles/stats 200 in 1ms :: {"unreadCount":0,"readCount":0,"savedCoun…
+7:07:15 PM [express] GET /api/settings/email-config 200 in 4ms :: {}
+7:07:15 PM [express] GET /api/settings/publishing 200 in 1ms :: {"sendEpub":true,"sendHtml":false,"s…
+7:07:15 PM [express] GET /api/articles 200 in 2ms :: []

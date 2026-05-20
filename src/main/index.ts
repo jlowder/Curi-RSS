@@ -1,11 +1,15 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell } from 'electron';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { spawn, ChildProcess } from 'child_process';
 
 const fs = require('fs');
+const remoteMain = require('@electron/remote/main');
+remoteMain.initialize();
 
-// Keep a global reference of the window object
+// Keep a global reference of the window object and server process
 let mainWindow: BrowserWindow | null = null;
+let serverProcess: ChildProcess | null = null;
 let tray: Tray | null = null;
 
 // Get the app's data directory
@@ -33,6 +37,41 @@ if (!existsSync(process.env.DB_PATH!) && existsSync(originalDbPath)) {
 // Auto-updater disabled to prevent GitHub API errors
 // const { autoUpdater } = require('electron-updater');
 
+const startServer = () => {
+  const isDev = process.env.NODE_ENV === 'development';
+
+  if (isDev) {
+    console.log('Using external development server');
+    return;
+  }
+
+  // Path to the server executable (bundled with esbuild to dist/index.js)
+  const serverPath = path.join(__dirname, 'index.js');
+
+  console.log('Starting backend server from:', serverPath);
+
+  serverProcess = spawn('node', [serverPath], {
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      PORT: '7016',
+      DB_PATH: process.env.DB_PATH,
+    },
+  });
+
+  serverProcess.stdout?.on('data', (data) => {
+    console.log(`Server: ${data}`);
+  });
+
+  serverProcess.stderr?.on('data', (data) => {
+    console.error(`Server Error: ${data}`);
+  });
+
+  serverProcess.on('close', (code) => {
+    console.log(`Server process exited with code ${code}`);
+  });
+};
+
 const createWindow = () => {
   // Create the browser window
   mainWindow = new BrowserWindow({
@@ -43,7 +82,7 @@ const createWindow = () => {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, '../preload.js'),
+      preload: path.join(__dirname, 'preload.js'),
     },
     backgroundColor: '#1a1a1a',
     show: false,
@@ -51,22 +90,17 @@ const createWindow = () => {
     trafficLightPosition: { x: 16, y: 16 },
   });
 
+  // Enable @electron/remote for the renderer
+  remoteMain.enable(mainWindow.webContents);
+
   // Load the app
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    // Use loadURL with file:// protocol for the bundled app
-    // When bundled in asar, files are at /dist/renderer/index.html or /dist/client/index.html
-    // The renderer files are in asarUnpack at app.asar.unpacked/dist/renderer/
-    // We need to construct the proper file:// URL
-    const appPath = app.getAppPath();
-    const asarUnpackDir = path.join(path.dirname(appPath), 'app.asar.unpacked');
-    const rendererPath = path.join(asarUnpackDir, 'dist', 'renderer', 'index.html');
-    const clientPath = path.join(asarUnpackDir, 'dist', 'client', 'index.html');
-    const startUrl = existsSync(rendererPath) ? rendererPath : clientPath;
-    const fileUrl = `file://${startUrl}`;
-    mainWindow.loadURL(fileUrl);
+    // When bundled, we load the index.html from the dist/renderer directory
+    // which is at the same level as main.js in the asar
+    mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
   }
 
   // Show window when ready
@@ -175,6 +209,7 @@ const createTray = () => {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  startServer();
   createWindow();
   createTray();
   // setupAutoUpdater(); // disabled
@@ -189,6 +224,10 @@ app.whenReady().then(() => {
 
 // Quit when all windows are closed, except on macOS
 app.on('window-all-closed', () => {
+  if (serverProcess) {
+    serverProcess.kill();
+    serverProcess = null;
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
