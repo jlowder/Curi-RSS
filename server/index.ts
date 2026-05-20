@@ -41,7 +41,12 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize database first
-  await initializeDatabase();
+  try {
+    await initializeDatabase();
+  } catch (dbError) {
+    console.error('CRITICAL: Database initialization failed:', dbError);
+    // Continue for now, but routes will likely fail
+  }
 
   // Run automatic cleanup on startup
   try {

@@ -9,7 +9,7 @@ async function throwIfResNotOk(res: Response) {
 
 function getBaseUrl() {
   const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-  return isElectron ? 'http://localhost:7016' : '';
+  return isElectron ? 'http://127.0.0.1:7016' : '';
 }
 
 export async function apiRequest(

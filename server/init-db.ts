@@ -6,11 +6,11 @@ import path from 'path';
 export async function initializeDatabase() {
   try {
     // Ensure data directory exists in production
-    const dbPath = process.env.NODE_ENV === 'production' 
+    const dbPath = process.env.DB_PATH || (process.env.NODE_ENV === 'production'
       ? path.join(process.cwd(), 'data', 'rss.db')
-      : path.join(process.cwd(), 'rss.db');
+      : path.join(process.cwd(), 'rss.db'));
 
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' || process.env.DB_PATH) {
       const dataDir = path.dirname(dbPath);
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });

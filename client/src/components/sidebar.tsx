@@ -68,7 +68,7 @@ function FeedStatsTooltip({ feedId, children }: FeedStatsTooltipProps) {
     queryKey: ["/api/feeds", feedId, "stats"],
     queryFn: () => {
       const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-      const baseUrl = isElectron ? 'http://localhost:7016' : '';
+      const baseUrl = isElectron ? 'http://127.0.0.1:7016' : '';
       return fetch(`${baseUrl}/api/feeds/${feedId}/stats`).then((res) => res.json());
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

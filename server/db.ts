@@ -5,9 +5,9 @@ import path from 'path';
 import fs from 'fs';
 
 // Ensure data directory exists in production
-const dbPath = process.env.NODE_ENV === 'production' 
+const dbPath = process.env.DB_PATH || (process.env.NODE_ENV === 'production'
   ? path.join(process.cwd(), 'data', 'rss.db')
-  : path.join(process.cwd(), 'rss.db');
+  : path.join(process.cwd(), 'rss.db'));
 
 if (process.env.NODE_ENV === 'production') {
   const dataDir = path.dirname(dbPath);
