@@ -7,12 +7,20 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function getBaseUrl() {
+  const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+  return isElectron ? 'http://localhost:7016' : '';
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const baseUrl = getBaseUrl();
+  const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : url;
+
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -49,7 +57,10 @@ export const getQueryFn: <T>(options: {
       }
     }
     
-    const res = await fetch(url, {
+    const baseUrl = getBaseUrl();
+    const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : url;
+
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 

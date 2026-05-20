@@ -107,7 +107,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       isBookmarked?: boolean;
       isQueued?: boolean;
     }) => {
-      const response = await fetch(`/api/articles/${id}`, {
+      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+      const baseUrl = isElectron ? 'http://localhost:7016' : '';
+      const response = await fetch(`${baseUrl}/api/articles/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -130,7 +132,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const summarizeMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/articles/${id}/summarize`, {
+      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+      const baseUrl = isElectron ? 'http://localhost:7016' : '';
+      const response = await fetch(`${baseUrl}/api/articles/${id}/summarize`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -155,7 +159,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const counterpointsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/articles/${id}/counterpoints`, {
+      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+      const baseUrl = isElectron ? 'http://localhost:7016' : '';
+      const response = await fetch(`${baseUrl}/api/articles/${id}/counterpoints`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -180,7 +186,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const referencedInfoMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/articles/${id}/additional-info`, {
+      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+      const baseUrl = isElectron ? 'http://localhost:7016' : '';
+      const response = await fetch(`${baseUrl}/api/articles/${id}/additional-info`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -207,7 +215,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const deepResearchMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/articles/${id}/deep-research`, {
+      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+      const baseUrl = isElectron ? 'http://localhost:7016' : '';
+      const response = await fetch(`${baseUrl}/api/articles/${id}/deep-research`, {
         method: "POST",
       });
       if (!response.ok) {
