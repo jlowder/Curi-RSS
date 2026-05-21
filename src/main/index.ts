@@ -1,7 +1,6 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell } from 'electron';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { spawn, ChildProcess } from 'child_process';
 
 // Single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
@@ -22,9 +21,8 @@ const fs = require('fs');
 const remoteMain = require('@electron/remote/main');
 remoteMain.initialize();
 
-// Keep a global reference of the window object and server process
+// Keep a global reference of the window object
 let mainWindow: BrowserWindow | null = null;
-let serverProcess: ChildProcess | null = null;
 let tray: Tray | null = null;
 
 // Get the app's data directory
@@ -48,9 +46,6 @@ if (!existsSync(process.env.DB_PATH!) && existsSync(originalDbPath)) {
     console.log('No existing database to copy');
   }
 }
-
-// Auto-updater disabled to prevent GitHub API errors
-// const { autoUpdater } = require('electron-updater');
 
 const startServer = () => {
   const isDev = process.env.NODE_ENV === 'development';
@@ -100,9 +95,9 @@ const createWindow = () => {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    // When bundled, we load the index.html from the dist/renderer directory
-    // which is at the same level as main.js in the asar
-    mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
+    // In production, the backend server (dist/server.js) is running on port 7016
+    // We load the app from the server to handle asset resolution and routing correctly
+    mainWindow.loadURL('http://127.0.0.1:7016');
   }
 
   // Show window when ready
@@ -115,7 +110,7 @@ const createWindow = () => {
   // Handle external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     // Allow navigation to same origin
-    if (url.startsWith('http://localhost:') || url.startsWith('https://localhost:') || url.startsWith('file://')) {
+    if (url.startsWith('http://localhost:') || url.startsWith('https://localhost:') || url.startsWith('file://') || url.startsWith('http://127.0.0.1:')) {
       return { action: 'allow' };
     }
     
@@ -180,41 +175,11 @@ const createTray = () => {
   });
 };
 
-// Auto-updater disabled to prevent GitHub API errors
-// const setupAutoUpdater = () => {
-//   console.log('Auto-updater disabled');
-//   return;
-//   
-//   if (process.platform === 'darwin' || process.platform === 'win32' || process.platform === 'linux') {
-//     autoUpdater.autoDownload = true;
-//     autoUpdater.autoInstallOnAppQuit = true;
-//     
-//     // Check for updates after app is ready
-//     app.whenReady().then(() => {
-//       autoUpdater.checkForUpdates();
-//       
-//       // Check for updates every hour
-//       setInterval(() => {
-//         autoUpdater.checkForUpdates();
-//       }, 60 * 60 * 1000);
-//     });
-//     
-//     autoUpdater.on('update-downloaded', () => {
-//       autoUpdater.quitAndInstall();
-//     });
-//     
-//     autoUpdater.on('error', (error: Error) => {
-//       console.error('Auto-updater error:', error);
-//     });
-//   }
-// };
-
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   startServer();
   createWindow();
   createTray();
-  // setupAutoUpdater(); // disabled
   
   // Handle activation on macOS
   app.on('activate', () => {
@@ -226,10 +191,6 @@ app.whenReady().then(() => {
 
 // Quit when all windows are closed, except on macOS
 app.on('window-all-closed', () => {
-  if (serverProcess) {
-    serverProcess.kill();
-    serverProcess = null;
-  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -241,7 +202,7 @@ ipcMain.handle('get-db-path', () => {
 });
 
 ipcMain.handle('ensure-db-initialized', async () => {
-  // Database is initialized in the renderer process
+  // Database is initialized in the main process
   return true;
 });
 
