@@ -18,7 +18,7 @@
     "electron:watch": "tsc --watch",
     "electron:preload": "tsc -p src/preload/tsconfig.json",
     "build:main": "tsc -p tsconfig.main.json && cp dist/index.js dist/main.js",
-    "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/server.js --external:better-sqlite3 --external:keytar --external:puppeteer --external:pdf-lib --external:esbuild --external:electron",
+    "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/server.js --packages=external",
     "build:preload": "tsc -p tsconfig.preload.json"
   },
   "dependencies": {
@@ -133,8 +133,5 @@
     "vite": "^5.4.19",
     "vitest": "^3.2.4",
     "wait-on": "^8.0.2"
-  },
-  "optionalDependencies": {
-    "bufferutil": "^4.0.8"
   }
 }
