@@ -85,9 +85,9 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || '7016', 10);
   server.listen({
     port,
-    host: "0.0.0.0",
+    host: "127.0.0.1", // Bind explicitly to 127.0.0.1 for Electron
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on port ${port} at 127.0.0.1`);
   });
 })();

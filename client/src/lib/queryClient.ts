@@ -2,14 +2,23 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
+    let text = res.statusText;
+    try {
+      text = (await res.text()) || res.statusText;
+    } catch (e) {
+      // ignore
+    }
+    console.error(`API Error: ${res.status} ${text} for ${res.url}`);
     throw new Error(`${res.status}: ${text}`);
   }
 }
 
-function getBaseUrl() {
-  const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-  return isElectron ? 'http://127.0.0.1:7016' : '';
+export function getIsElectron() {
+  return window.navigator.userAgent.toLowerCase().includes('electron') || (window as any).electron !== undefined;
+}
+
+export function getBaseUrl() {
+  return getIsElectron() ? 'http://127.0.0.1:7016' : '';
 }
 
 export async function apiRequest(

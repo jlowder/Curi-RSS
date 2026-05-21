@@ -17,7 +17,7 @@ import {
   X,
   CheckCircle,
 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getBaseUrl } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import type {
   Feed,
@@ -33,6 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
+import whiteRabbit from "@/assets/white_rabbit.png";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -67,8 +68,7 @@ function FeedStatsTooltip({ feedId, children }: FeedStatsTooltipProps) {
   const { data: stats } = useQuery<FeedStats>({
     queryKey: ["/api/feeds", feedId, "stats"],
     queryFn: () => {
-      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-      const baseUrl = isElectron ? 'http://127.0.0.1:7016' : '';
+      const baseUrl = getBaseUrl();
       return fetch(`${baseUrl}/api/feeds/${feedId}/stats`).then((res) => res.json());
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -243,7 +243,7 @@ export function Sidebar({
                 className="w-20 flex-shrink-0"
               >
                 <img
-                  src="/white_rabbit.png"
+                  src={whiteRabbit}
                   alt="Curi-RSS"
                   className="w-full"
                 />

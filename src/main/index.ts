@@ -60,33 +60,18 @@ const startServer = () => {
     return;
   }
 
-  // Path to the server executable (bundled with esbuild to dist/server.js)
-  const serverPath = path.join(__dirname, 'server.js');
+  // Use DB_PATH initialized earlier
+  process.env.PORT = '7016';
+  process.env.NODE_ENV = 'production';
 
-  console.log('Starting backend server from:', serverPath);
-
-  serverProcess = spawn(process.execPath, [serverPath], {
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      PORT: '7016',
-      DB_PATH: process.env.DB_PATH,
-      ELECTRON_RUN_AS_NODE: '1',
-    },
-  });
-
-  serverProcess.stdout?.on('data', (data) => {
-    console.log(`Server: ${data}`);
-  });
-
-  serverProcess.stderr?.on('data', (data) => {
-    console.error(`Server Error: ${data}`);
-  });
-
-  serverProcess.on('close', (code) => {
-    console.log(`Server process exited with code ${code}`);
-    serverProcess = null;
-  });
+  try {
+    // Import and start the server directly in the main process
+    // This ensures it has access to the same environment and avoids spawn issues
+    console.log('Initializing backend server...');
+    require('./server.js');
+  } catch (error) {
+    console.error('Failed to start backend server:', error);
+  }
 };
 
 const createWindow = () => {

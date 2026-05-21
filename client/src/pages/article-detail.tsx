@@ -24,7 +24,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { format } from "date-fns";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getBaseUrl } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { truncate } from "@/lib/utils";
 import type { ArticleWithFeed, LlmConfig } from "@shared/schema";
@@ -107,8 +107,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       isBookmarked?: boolean;
       isQueued?: boolean;
     }) => {
-      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-      const baseUrl = isElectron ? 'http://127.0.0.1:7016' : '';
+      const baseUrl = getBaseUrl();
       const response = await fetch(`${baseUrl}/api/articles/${id}`, {
         method: "PATCH",
         headers: {
@@ -132,8 +131,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const summarizeMutation = useMutation({
     mutationFn: async () => {
-      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-      const baseUrl = isElectron ? 'http://127.0.0.1:7016' : '';
+      const baseUrl = getBaseUrl();
       const response = await fetch(`${baseUrl}/api/articles/${id}/summarize`, {
         method: "POST",
       });
@@ -159,8 +157,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const counterpointsMutation = useMutation({
     mutationFn: async () => {
-      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-      const baseUrl = isElectron ? 'http://127.0.0.1:7016' : '';
+      const baseUrl = getBaseUrl();
       const response = await fetch(`${baseUrl}/api/articles/${id}/counterpoints`, {
         method: "POST",
       });
@@ -186,8 +183,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const referencedInfoMutation = useMutation({
     mutationFn: async () => {
-      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-      const baseUrl = isElectron ? 'http://127.0.0.1:7016' : '';
+      const baseUrl = getBaseUrl();
       const response = await fetch(`${baseUrl}/api/articles/${id}/additional-info`, {
         method: "POST",
       });
@@ -215,8 +211,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const deepResearchMutation = useMutation({
     mutationFn: async () => {
-      const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
-      const baseUrl = isElectron ? 'http://127.0.0.1:7016' : '';
+      const baseUrl = getBaseUrl();
       const response = await fetch(`${baseUrl}/api/articles/${id}/deep-research`, {
         method: "POST",
       });

@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import logo from "@/assets/logo.png";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -104,7 +105,7 @@ export function TopBar({ onMenuClick, selectedFeedId, selectedCategory, searchQu
         </div>
 
         <div className="flex-grow hidden md:flex justify-center">
-          <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
+          <img src={logo} alt="Logo" className="h-8 w-auto" />
         </div>
 
         <div className="flex items-center space-x-2 md:space-x-4 flex-wrap gap-2">

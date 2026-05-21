@@ -103,10 +103,10 @@ export function FindFeedModal({ open, onOpenChange }: FindFeedModalProps) {
         });
       }
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to find feeds.",
+        description: `Failed to find feeds: ${error.message}`,
         variant: "destructive",
       });
     },
