@@ -18,7 +18,6 @@ import {
   DEFAULT_PROMPTS,
 } from "@shared/schema";
 import Parser from "rss-parser";
-import fetch from "node-fetch";
 import keytar from "keytar";
 import * as cheerio from "cheerio";
 import puppeteer from "puppeteer";

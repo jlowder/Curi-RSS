@@ -19,7 +19,7 @@ npx tsc -p tsconfig.preload.json
 
 # Build backend server
 echo "Compiling backend server..."
-npx esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outfile=dist/server.js
+npx esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/server.js --external:better-sqlite3 --external:keytar --external:puppeteer --external:pdf-lib --external:esbuild --external:electron
 
 # Build Vite renderer
 echo "Building Vite renderer..."

@@ -18,7 +18,7 @@
     "electron:watch": "tsc --watch",
     "electron:preload": "tsc -p src/preload/tsconfig.json",
     "build:main": "tsc -p tsconfig.main.json && cp dist/index.js dist/main.js",
-    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outfile=dist/server.js",
+    "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/server.js --external:better-sqlite3 --external:keytar --external:puppeteer --external:pdf-lib --external:esbuild --external:electron",
     "build:preload": "tsc -p tsconfig.preload.json"
   },
   "dependencies": {
@@ -80,7 +80,6 @@
     "lucide-react": "^0.453.0",
     "memorystore": "^1.6.7",
     "next-themes": "^0.4.6",
-    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.6",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
