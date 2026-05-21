@@ -18,7 +18,7 @@
     "electron:watch": "tsc --watch",
     "electron:preload": "tsc -p src/preload/tsconfig.json",
     "build:main": "tsc -p tsconfig.main.json && cp dist/index.js dist/main.js",
-    "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/server.js --packages=external",
+    "build:server": "esbuild server/index.ts --platform=node --bundle --format=cjs --outfile=dist/server.js --packages=external --external:vite --external:../vite.config --external:@vitejs/plugin-react",
     "build:preload": "tsc -p tsconfig.preload.json"
   },
   "dependencies": {
