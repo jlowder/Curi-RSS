@@ -107,17 +107,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
       isBookmarked?: boolean;
       isQueued?: boolean;
     }) => {
-      const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/api/articles/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updates),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update article");
-      }
+      const response = await apiRequest("PATCH", `/api/articles/${id}`, updates);
       return response.json();
     },
     onSuccess: () => {
@@ -131,16 +121,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const summarizeMutation = useMutation({
     mutationFn: async () => {
-      const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/api/articles/${id}/summarize`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.details || errorData.error || "Failed to summarize article",
-        );
-      }
+      const response = await apiRequest("POST", `/api/articles/${id}/summarize`);
       return response.json();
     },
     onSuccess: (data) => {
@@ -157,16 +138,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const counterpointsMutation = useMutation({
     mutationFn: async () => {
-      const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/api/articles/${id}/counterpoints`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.details || errorData.error || "Failed to get counterpoints",
-        );
-      }
+      const response = await apiRequest("POST", `/api/articles/${id}/counterpoints`);
       return response.json();
     },
     onSuccess: (data) => {
@@ -183,18 +155,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const referencedInfoMutation = useMutation({
     mutationFn: async () => {
-      const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/api/articles/${id}/additional-info`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.details ||
-            errorData.error ||
-            "Failed to get referenced info",
-        );
-      }
+      const response = await apiRequest("POST", `/api/articles/${id}/additional-info`);
       return response.json();
     },
     onSuccess: (data) => {
@@ -211,16 +172,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
   const deepResearchMutation = useMutation({
     mutationFn: async () => {
-      const baseUrl = getBaseUrl();
-      const response = await fetch(`${baseUrl}/api/articles/${id}/deep-research`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.details || errorData.error || "Failed to get deep research",
-        );
-      }
+      const response = await apiRequest("POST", `/api/articles/${id}/deep-research`);
       return response.json();
     },
     onSuccess: (data) => {

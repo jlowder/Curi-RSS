@@ -110,12 +110,21 @@ const createWindow = () => {
   } else {
     // In production, the backend server (dist/server.js) is running on port 7016
     // We wait a moment for the server to start before loading
+    let retryCount = 0;
+    const maxRetries = 20;
     const loadApp = async () => {
       try {
         await mainWindow?.loadURL('http://127.0.0.1:7016');
       } catch (e) {
-        console.log('Server not ready, retrying in 500ms...');
-        setTimeout(loadApp, 500);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Server not ready, retrying (${retryCount}/${maxRetries}) in 500ms...`);
+          setTimeout(loadApp, 500);
+        } else {
+          console.error('Failed to load application after multiple retries.');
+          // Load a local error page or show a message
+          mainWindow?.loadFile(path.join(__dirname, 'renderer/index.html'));
+        }
       }
     };
     loadApp();

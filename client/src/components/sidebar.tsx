@@ -67,9 +67,9 @@ const phrases = [
 function FeedStatsTooltip({ feedId, children }: FeedStatsTooltipProps) {
   const { data: stats } = useQuery<FeedStats>({
     queryKey: ["/api/feeds", feedId, "stats"],
-    queryFn: () => {
-      const baseUrl = getBaseUrl();
-      return fetch(`${baseUrl}/api/feeds/${feedId}/stats`).then((res) => res.json());
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/feeds/${feedId}/stats`);
+      return res.json();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
