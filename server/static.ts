@@ -3,7 +3,12 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "renderer");
+  // In Electron, assets are relative to the app path
+  const distPath = process.env.APP_PATH
+    ? path.join(process.env.APP_PATH, "dist", "renderer")
+    : path.resolve(__dirname, "renderer");
+
+  console.log(`Serving static assets from: ${distPath}`);
 
   if (!fs.existsSync(distPath)) {
     throw new Error(

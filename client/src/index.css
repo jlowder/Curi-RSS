@@ -138,6 +138,15 @@
   .hover\:scale-105:hover {
     transform: scale(1.05);
   }
+
+  /* Electron draggable regions */
+  .electron-drag {
+    -webkit-app-region: drag;
+  }
+
+  .electron-no-drag {
+    -webkit-app-region: no-drag;
+  }
 }
 
 @layer components {

@@ -25,6 +25,9 @@ remoteMain.initialize();
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 
+// Set app path for server to find assets
+process.env.APP_PATH = app.getAppPath();
+
 // Get the app's data directory
 const userDataPath = app.getPath('userData');
 const appDataDir = path.join(userDataPath, 'curi-rss');
@@ -71,6 +74,8 @@ const startServer = () => {
 
 const createWindow = () => {
   // Create the browser window
+  const isMac = process.platform === 'darwin';
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -83,9 +88,17 @@ const createWindow = () => {
     },
     backgroundColor: '#1a1a1a',
     show: false,
-    titleBarStyle: 'hidden',
+    // On macOS, use hidden title bar for traffic lights. On others, use standard window decorations.
+    frame: isMac ? false : true,
+    titleBarStyle: isMac ? 'hidden' : 'default',
     trafficLightPosition: { x: 16, y: 16 },
   });
+
+  // Hide the menu bar on Linux/Windows
+  if (!isMac) {
+    mainWindow.setAutoHideMenuBar(true);
+    mainWindow.setMenuBarVisibility(false);
+  }
 
   // Enable @electron/remote for the renderer
   remoteMain.enable(mainWindow.webContents);
@@ -96,8 +109,16 @@ const createWindow = () => {
     mainWindow.webContents.openDevTools();
   } else {
     // In production, the backend server (dist/server.js) is running on port 7016
-    // We load the app from the server to handle asset resolution and routing correctly
-    mainWindow.loadURL('http://127.0.0.1:7016');
+    // We wait a moment for the server to start before loading
+    const loadApp = async () => {
+      try {
+        await mainWindow?.loadURL('http://127.0.0.1:7016');
+      } catch (e) {
+        console.log('Server not ready, retrying in 500ms...');
+        setTimeout(loadApp, 500);
+      }
+    };
+    loadApp();
   }
 
   // Show window when ready

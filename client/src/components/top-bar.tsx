@@ -91,10 +91,15 @@ export function TopBar({ onMenuClick, selectedFeedId, selectedCategory, searchQu
     displayTitle = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
   }
 
+  const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+  const isMac = window.navigator.platform.toLowerCase().includes('mac');
+  const dragClass = (isElectron && isMac) ? "electron-drag" : "";
+  const noDragClass = (isElectron && isMac) ? "electron-no-drag" : "";
+
   return (
-    <div className="bg-gray-900 border-b border-gray-800 p-4">
+    <div className={`bg-gray-900 border-b border-gray-800 p-4 ${dragClass}`}>
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center space-x-4">
+        <div className={`flex items-center space-x-4 ${noDragClass}`}>
           <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick} data-testid="sidebar-toggle">
             <Menu className="h-6 w-6" />
           </Button>
@@ -104,11 +109,11 @@ export function TopBar({ onMenuClick, selectedFeedId, selectedCategory, searchQu
           </span>
         </div>
 
-        <div className="flex-grow hidden md:flex justify-center">
+        <div className={`flex-grow hidden md:flex justify-center ${noDragClass}`}>
           <img src={logo} alt="Logo" className="h-8 w-auto" />
         </div>
 
-        <div className="flex items-center space-x-2 md:space-x-4 flex-wrap gap-2">
+        <div className={`flex items-center space-x-2 md:space-x-4 flex-wrap gap-2 ${noDragClass}`}>
           {/* Search Bar */}
           <div className="relative">
             <Input
