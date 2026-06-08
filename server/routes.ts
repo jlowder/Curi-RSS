@@ -26,7 +26,7 @@ import { PDFDocument } from "pdf-lib";
 import TurndownService from "turndown";
 
 const DEFAULT_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
 const parser = new Parser({
   headers: {
@@ -158,8 +158,7 @@ async function extractFullArticleContent(
       const timeoutId = setTimeout(() => controller.abort(), 15000);
       const response = await fetch(url, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          "User-Agent": DEFAULT_USER_AGENT,
         },
         signal: controller.signal,
       });
