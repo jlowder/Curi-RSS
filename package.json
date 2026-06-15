@@ -1,6 +1,7 @@
 {
   "name": "rest-express",
   "version": "1.0.0",
+  "main": "electron/dist/main.js",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -10,7 +11,12 @@
     "check": "tsc",
     "test": "vitest",
     "test:e2e": "npx playwright test",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "prebuild:electron": "npx @electron/rebuild -v 42.4.0",
+    "build:electron": "esbuild electron/main.ts --platform=node --packages=external --bundle --format=esm --outdir=electron/dist --outbase=electron && cp electron/preload.cjs electron/dist/",
+    "electron:dev": "npm run prebuild:electron && npm run build:electron && NODE_ENV=development electron electron/dist/main.js",
+    "electron:build": "npm run prebuild:electron && vite build && npm run build:electron && electron-builder --config electron-builder.config.js",
+    "electron:start": "NODE_ENV=production electron electron/dist/main.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -48,7 +54,7 @@
     "@types/dompurify": "^3.0.5",
     "@types/keytar": "^4.4.0",
     "@types/turndown": "^5.0.5",
-    "better-sqlite3": "^12.2.0",
+    "better-sqlite3": "^12.10.1",
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -110,6 +116,8 @@
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.30.4",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",

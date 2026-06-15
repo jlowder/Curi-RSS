@@ -975,4 +975,19 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Always use DatabaseStorage with SQLite
-export const storage = new DatabaseStorage();
+let _storage: DatabaseStorage;
+
+// Lazy proxy: creates the actual instance on first access (after getDb() is called)
+export const storage = new Proxy<DatabaseStorage>({} as DatabaseStorage, {
+  get(target, prop) {
+    if (!_storage) {
+      // Use the module-level db export (set when getDb() is called)
+      _storage = new DatabaseStorage(db);
+    }
+    const value = Reflect.get(_storage, prop);
+    if (typeof value === "function") {
+      return (...args: any[]) => value.apply(_storage, args);
+    }
+    return value;
+  },
+});

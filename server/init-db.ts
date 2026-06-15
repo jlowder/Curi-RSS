@@ -1,27 +1,11 @@
-import Database from 'better-sqlite3';
-import fs from 'fs';
-import path from 'path';
+import type Database from "better-sqlite3";
 
-// Initialize database tables
-export async function initializeDatabase() {
+// Initialize database tables using a better-sqlite3 connection directly
+// (no longer uses (db as any).client)
+export async function initializeDatabase(sqliteClient: Database) {
   try {
-    // Ensure data directory exists in production
-    const dbPath = process.env.NODE_ENV === 'production' 
-      ? path.join(process.cwd(), 'data', 'rss.db')
-      : path.join(process.cwd(), 'rss.db');
-
-    if (process.env.NODE_ENV === 'production') {
-      const dataDir = path.dirname(dbPath);
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      }
-    }
-
-    // Connect directly to SQLite for initialization
-    const sqlite = new Database(dbPath);
-
     // Create tables if they don't exist
-    sqlite.exec(`
+    sqliteClient.exec(`
       CREATE TABLE IF NOT EXISTS feeds (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -56,7 +40,6 @@ export async function initializeDatabase() {
       );
     `);
 
-    sqlite.close();
     console.log('✅ Database initialized successfully');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
