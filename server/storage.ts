@@ -424,13 +424,15 @@ export class MemStorage implements IStorage {
       enabled: true,
       endpoint: "http://localhost:8000/v1/chat/completions",
       summarizeEnabled: true,
-      prompt:
-        "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}",
+      prompt: DEFAULT_PROMPTS.summarize,
       additionalInfoEnabled: true,
+      additionalInfoPrompt: DEFAULT_PROMPTS.additionalInfo,
       deepResearchEnabled: true,
+      deepResearchPrompt: DEFAULT_PROMPTS.deepResearch,
       discussEnabled: true,
-      discussPrompt:
-        "Summarize this article in one sentence, and ask the user what they would like to discuss about it.",
+      discussPrompt: DEFAULT_PROMPTS.discuss,
+      counterpointsEnabled: true,
+      counterpointsPrompt: DEFAULT_PROMPTS.counterpoints,
     };
   }
 }
@@ -928,30 +930,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getLlmConfig(): Promise<LlmConfig> {
-    const keys = [
-      "enabled",
-      "endpoint",
-      "prompt",
-      "additionalInfoPrompt",
-      "deepResearchPrompt",
-      "discussPrompt",
-      "max_tokens",
-      "temperature",
-      "llmModel",
-      "summarizeEnabled",
-      "additionalInfoEnabled",
-      "deepResearchEnabled",
-      "discussEnabled",
-      "counterpointsEnabled",
-      "counterpointsPrompt",
-    ];
-    const settingsList = await Promise.all(
-      keys.map((key) => this.getSetting(`llm_${key}`)),
-    );
+    const llmSettings = await this.db
+      .select()
+      .from(settings)
+      .where(like(settings.key, "llm_%"));
 
     const configMap: Record<string, string | undefined> = {};
-    keys.forEach((key, index) => {
-      configMap[key] = settingsList[index];
+    llmSettings.forEach((s: any) => {
+      const key = s.key.replace("llm_", "");
+      configMap[key] = s.value;
     });
 
     return {
