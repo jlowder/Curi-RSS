@@ -1064,13 +1064,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     id: string,
     actionName: string,
     promptTemplate: string,
-    temperature: number = 0.7,
+    defaultTemperature: number = 0.7,
   ) {
     let article = await storage.getArticle(id);
     if (!article) throw new Error("Article not found");
 
     article = await ensureFullArticleContent(article);
-    if (!article.content) throw new Error("Article content not found");
+    if (!article.content) {
+      throw new Error("Article content not found even after fetching");
+    }
 
     const llmConfig = await storage.getLlmConfig();
     const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
@@ -1093,8 +1095,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const requestBody = {
       model: llmConfig.llmModel || "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: llmConfig.max_tokens || 4000,
-      temperature: llmConfig.temperature || temperature,
+      max_tokens: llmConfig.max_tokens ?? 4000,
+      temperature: llmConfig.temperature ?? defaultTemperature,
     };
 
     console.log(`Sending LLM ${actionName} request to ${endpoint}`, {
@@ -1104,29 +1106,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       hasApiKey: !!apiKey,
     });
 
-    const llmResponse = await fetch(endpoint, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(requestBody),
-    });
+    let llmResponse;
+    try {
+      llmResponse = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+    } catch (fetchError: any) {
+      console.error(`Fetch error during LLM ${actionName}:`, fetchError);
+      throw new Error(
+        `Failed to connect to LLM endpoint: ${fetchError.message}`,
+      );
+    }
 
     if (!llmResponse.ok) {
       const errorBody = await llmResponse.text();
+      console.error(`LLM ${actionName} request failed:`, {
+        status: llmResponse.status,
+        statusText: llmResponse.statusText,
+        endpoint,
+        model: requestBody.model,
+        errorBody,
+      });
       throw new Error(
         `LLM API request failed with status ${llmResponse.status}: ${errorBody}`,
       );
     }
 
-    const llmResult = (await llmResponse.json()) as any;
+    let llmResult;
+    try {
+      llmResult = (await llmResponse.json()) as any;
+    } catch (parseError: any) {
+      console.error(`Failed to parse LLM response as JSON:`, parseError);
+      throw new Error(`Failed to parse LLM response: ${parseError.message}`);
+    }
+
     const content = llmResult.choices?.[0]?.message?.content;
+    const finishReason = llmResult.choices?.[0]?.finish_reason;
 
     if (!content) {
+      console.error(
+        `Unexpected LLM response structure:`,
+        JSON.stringify(llmResult),
+      );
       throw new Error(`Failed to extract ${actionName} from LLM response`);
     }
 
     console.log(
-      `LLM ${actionName} complete. Length: ${content.length} chars.`,
+      `LLM ${actionName} complete. Length: ${content.length} chars. Finish reason: ${finishReason}`,
     );
+    if (content.length > 0) {
+      console.log(
+        `Response start: ${content.substring(0, 100).replace(/\n/g, " ")}...`,
+      );
+    }
     return content;
   }
 

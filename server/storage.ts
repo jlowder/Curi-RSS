@@ -938,7 +938,7 @@ export class DatabaseStorage implements IStorage {
     const configMap: Record<string, string | undefined> = {};
     llmSettings.forEach((s: any) => {
       const key = s.key.replace("llm_", "");
-      configMap[key] = s.value;
+      configMap[key] = s.value ?? undefined;
     });
 
     return {
