@@ -486,9 +486,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Parse and store initial articles
         if (feed.items && feed.items.length > 0) {
-          const articlesToProcess = feed.items.slice(0, 20); // Limit to 20 most recent
+          // Limit to 10 most recent for initial add to keep it fast
+          const articlesToProcess = feed.items.slice(0, 10);
 
-          // Process all articles with enhanced content and image extraction
+          // Process all articles
           for (const item of articlesToProcess) {
             if (isArticleTooOld(item.pubDate)) {
               continue;
@@ -501,27 +502,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               let imageUrl = extractImageFromItem(item);
               let fullContent = item.content || item.contentSnippet || "";
 
-              // Extract full content and enhanced image if needed
-              try {
-                console.log(
-                  `Extracting full content for new article: ${item.title}`,
-                );
-                const { content, imageUrl: extractedImageUrl } =
-                  await extractFullArticleContent(item.link);
-
-                if (content && content.length > fullContent.length) {
-                  fullContent = content;
-                }
-
-                if (!imageUrl && extractedImageUrl) {
-                  imageUrl = extractedImageUrl;
-                }
-              } catch (extractError) {
-                console.error(
-                  "Failed to extract full content for new article:",
-                  extractError,
-                );
-              }
+              // Skip full extraction during initial add to keep it responsive.
+              // It will happen lazily when the article is viewed.
 
               await storage.createArticle({
                 feedId: newFeed.id,
@@ -626,7 +608,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Parse and store new articles
         let newArticlesCount = 0;
         if (parsedFeed.items && parsedFeed.items.length > 0) {
-          for (const item of parsedFeed.items.slice(0, 20)) {
+          // Limit to 10 for refresh to keep it fast
+          for (const item of parsedFeed.items.slice(0, 10)) {
             if (isArticleTooOld(item.pubDate)) {
               continue;
             }
@@ -637,27 +620,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               let imageUrl = extractImageFromItem(item);
               let fullContent = item.content || item.contentSnippet || "";
 
-              // Extract full content and enhanced image if needed
-              try {
-                console.log(
-                  `Extracting full content for refreshed article: ${item.title}`,
-                );
-                const { content, imageUrl: extractedImageUrl } =
-                  await extractFullArticleContent(item.link);
-
-                if (content && content.length > fullContent.length) {
-                  fullContent = content;
-                }
-
-                if (!imageUrl && extractedImageUrl) {
-                  imageUrl = extractedImageUrl;
-                }
-              } catch (extractError) {
-                console.error(
-                  "Failed to extract full content for refreshed article:",
-                  extractError,
-                );
-              }
+              // Skip slow full extraction during refresh.
+              // It will happen lazily when the article is viewed.
 
               await storage.createArticle({
                 feedId: feed.id,
@@ -1096,116 +1060,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  async function handleLlmRequest(
+    id: string,
+    actionName: string,
+    promptTemplate: string,
+    defaultTemperature: number = 0.7,
+  ) {
+    let article = await storage.getArticle(id);
+    if (!article) throw new Error("Article not found");
+
+    article = await ensureFullArticleContent(article);
+    if (!article.content) {
+      throw new Error("Article content not found even after fetching");
+    }
+
+    const llmConfig = await storage.getLlmConfig();
+    const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
+    const apiKey = await getLlmApiKey();
+
+    const plainTextContent = cheerio.load(article.content).text();
+    const truncatedContent =
+      plainTextContent.length > 40000
+        ? plainTextContent.slice(0, 40000) + "... [truncated]"
+        : plainTextContent;
+    const prompt = promptTemplate.replace("{article_text}", truncatedContent);
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+
+    const requestBody = {
+      model: llmConfig.llmModel || "gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: llmConfig.max_tokens ?? 4000,
+      temperature: llmConfig.temperature ?? defaultTemperature,
+    };
+
+    console.log(`Sending LLM ${actionName} request to ${endpoint}`, {
+      model: requestBody.model,
+      max_tokens: requestBody.max_tokens,
+      temperature: requestBody.temperature,
+      hasApiKey: !!apiKey,
+    });
+
+    let llmResponse;
+    try {
+      llmResponse = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+    } catch (fetchError: any) {
+      console.error(`Fetch error during LLM ${actionName}:`, fetchError);
+      throw new Error(
+        `Failed to connect to LLM endpoint: ${fetchError.message}`,
+      );
+    }
+
+    if (!llmResponse.ok) {
+      const errorBody = await llmResponse.text();
+      console.error(`LLM ${actionName} request failed:`, {
+        status: llmResponse.status,
+        statusText: llmResponse.statusText,
+        endpoint,
+        model: requestBody.model,
+        errorBody,
+      });
+      throw new Error(
+        `LLM API request failed with status ${llmResponse.status}: ${errorBody}`,
+      );
+    }
+
+    let llmResult;
+    try {
+      llmResult = (await llmResponse.json()) as any;
+    } catch (parseError: any) {
+      console.error(`Failed to parse LLM response as JSON:`, parseError);
+      throw new Error(`Failed to parse LLM response: ${parseError.message}`);
+    }
+
+    const content = llmResult.choices?.[0]?.message?.content;
+    const finishReason = llmResult.choices?.[0]?.finish_reason;
+
+    if (!content) {
+      console.error(
+        `Unexpected LLM response structure:`,
+        JSON.stringify(llmResult),
+      );
+      throw new Error(`Failed to extract ${actionName} from LLM response`);
+    }
+
+    console.log(
+      `LLM ${actionName} complete. Length: ${content.length} chars. Finish reason: ${finishReason}`,
+    );
+    if (content.length > 0) {
+      console.log(
+        `Response start: ${content.substring(0, 100).replace(/\n/g, " ")}...`,
+      );
+    }
+    return content;
+  }
+
   app.post("/api/articles/:id/summarize", async (req, res) => {
     try {
-      const { id } = req.params;
-      let article = await storage.getArticle(id);
-
-      if (!article) {
-        return res.status(404).json({ error: "Article not found" });
-      }
-
-      article = await ensureFullArticleContent(article);
-
-      if (!article.content) {
-        return res
-          .status(404)
-          .json({ error: "Article content not found even after fetching" });
-      }
-
       const llmConfig = await storage.getLlmConfig();
-      const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
-
-      const promptTemplate =
-        llmConfig.prompt || DEFAULT_PROMPTS.summarize;
-
-      const plainTextContent = cheerio.load(article.content).text();
-      const truncatedContent =
-        plainTextContent.length > 40000
-          ? plainTextContent.slice(0, 40000) + "... [truncated]"
-          : plainTextContent;
-      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
-
-      const apiKey = await getLlmApiKey();
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (apiKey) {
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      }
-
-      const requestBody = {
-        model: llmConfig.llmModel || "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 4000,
-        temperature: llmConfig.temperature || 0.7,
-      };
-
-      console.log(`Sending LLM Summarization request to ${endpoint}`, {
-        model: requestBody.model,
-        max_tokens: requestBody.max_tokens,
-        temperature: requestBody.temperature,
-        hasApiKey: !!apiKey,
-      });
-
-      let llmResponse;
-      try {
-        llmResponse = await fetch(endpoint, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(requestBody),
-        });
-      } catch (fetchError: any) {
-        console.error(`Fetch error during LLM Summarization:`, fetchError);
-        throw new Error(
-          `Failed to connect to LLM endpoint: ${fetchError.message}`,
-        );
-      }
-
-      if (!llmResponse.ok) {
-        const errorBody = await llmResponse.text();
-        console.error(`LLM Summarization request failed:`, {
-          status: llmResponse.status,
-          statusText: llmResponse.statusText,
-          endpoint,
-          model: requestBody.model,
-          errorBody,
-        });
-        throw new Error(
-          `LLM API request failed with status ${llmResponse.status}: ${errorBody}`,
-        );
-      }
-
-      let llmResult;
-      try {
-        llmResult = (await llmResponse.json()) as any;
-      } catch (parseError: any) {
-        console.error(`Failed to parse LLM response as JSON:`, parseError);
-        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
-      }
-
-      const summary = llmResult.choices?.[0]?.message?.content;
-      const finishReason = llmResult.choices?.[0]?.finish_reason;
-
-      if (!summary) {
-        console.error(
-          `Unexpected LLM response structure:`,
-          JSON.stringify(llmResult),
-        );
-        throw new Error(
-          "Failed to extract summary from LLM response. Check server logs for response structure.",
-        );
-      }
-
-      console.log(
-        `LLM Summarization complete. Length: ${summary.length} chars. Finish reason: ${finishReason}`,
+      const summary = await handleLlmRequest(
+        req.params.id,
+        "Summarization",
+        llmConfig.prompt || DEFAULT_PROMPTS.summarize,
       );
-      if (summary.length > 0) {
-        console.log(
-          `Response start: ${summary.substring(0, 100).replace(/\n/g, " ")}...`,
-        );
-      }
-
       res.json({ summary });
     } catch (error: any) {
       console.error("Summarization error:", error);
@@ -1218,112 +1184,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/articles/:id/additional-info", async (req, res) => {
     try {
-      const { id } = req.params;
-      let article = await storage.getArticle(id);
-
-      if (!article) {
-        return res.status(404).json({ error: "Article not found" });
-      }
-
-      article = await ensureFullArticleContent(article);
-
-      if (!article.content) {
-        return res.status(404).json({ error: "Article content not found" });
-      }
-
       const llmConfig = await storage.getLlmConfig();
-      const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
-
-      const promptTemplate =
-        llmConfig.additionalInfoPrompt || DEFAULT_PROMPTS.additionalInfo;
-
-      const plainTextContent = cheerio.load(article.content).text();
-      const truncatedContent =
-        plainTextContent.length > 40000
-          ? plainTextContent.slice(0, 40000) + "... [truncated]"
-          : plainTextContent;
-      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
-
-      const apiKey = await getLlmApiKey();
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (apiKey) {
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      }
-
-      const requestBody = {
-        model: llmConfig.llmModel || "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 4000,
-        temperature: llmConfig.temperature || 0.7,
-      };
-
-      console.log(`Sending LLM Additional Info request to ${endpoint}`, {
-        model: requestBody.model,
-        max_tokens: requestBody.max_tokens,
-        temperature: requestBody.temperature,
-        hasApiKey: !!apiKey,
-      });
-
-      let llmResponse;
-      try {
-        llmResponse = await fetch(endpoint, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(requestBody),
-        });
-      } catch (fetchError: any) {
-        console.error(`Fetch error during LLM Additional Info:`, fetchError);
-        throw new Error(
-          `Failed to connect to LLM endpoint: ${fetchError.message}`,
-        );
-      }
-
-      if (!llmResponse.ok) {
-        const errorBody = await llmResponse.text();
-        console.error(`LLM Additional Info request failed:`, {
-          status: llmResponse.status,
-          statusText: llmResponse.statusText,
-          endpoint,
-          model: requestBody.model,
-          errorBody,
-        });
-        throw new Error(
-          `LLM API request failed with status ${llmResponse.status}: ${errorBody}`,
-        );
-      }
-
-      let llmResult;
-      try {
-        llmResult = (await llmResponse.json()) as any;
-      } catch (parseError: any) {
-        console.error(`Failed to parse LLM response as JSON:`, parseError);
-        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
-      }
-
-      const additionalInfo = llmResult.choices?.[0]?.message?.content;
-      const finishReason = llmResult.choices?.[0]?.finish_reason;
-
-      if (!additionalInfo) {
-        console.error(
-          `Unexpected LLM response structure:`,
-          JSON.stringify(llmResult),
-        );
-        throw new Error(
-          "Failed to extract additional info from LLM response. Check server logs for response structure.",
-        );
-      }
-
-      console.log(
-        `LLM Additional Info complete. Length: ${additionalInfo.length} chars. Finish reason: ${finishReason}`,
+      const additionalInfo = await handleLlmRequest(
+        req.params.id,
+        "Additional Info",
+        llmConfig.additionalInfoPrompt || DEFAULT_PROMPTS.additionalInfo,
       );
-      if (additionalInfo.length > 0) {
-        console.log(
-          `Response start: ${additionalInfo.substring(0, 100).replace(/\n/g, " ")}...`,
-        );
-      }
-
       res.json({ additionalInfo });
     } catch (error: any) {
       console.error("Additional info error:", error);
@@ -1336,112 +1202,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/articles/:id/deep-research", async (req, res) => {
     try {
-      const { id } = req.params;
-      let article = await storage.getArticle(id);
-
-      if (!article) {
-        return res.status(404).json({ error: "Article not found" });
-      }
-
-      article = await ensureFullArticleContent(article);
-
-      if (!article.content) {
-        return res.status(404).json({ error: "Article content not found" });
-      }
-
       const llmConfig = await storage.getLlmConfig();
-      const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
-
-      const promptTemplate =
-        llmConfig.deepResearchPrompt || DEFAULT_PROMPTS.deepResearch;
-
-      const plainTextContent = cheerio.load(article.content).text();
-      const truncatedContent =
-        plainTextContent.length > 40000
-          ? plainTextContent.slice(0, 40000) + "... [truncated]"
-          : plainTextContent;
-      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
-
-      const apiKey = await getLlmApiKey();
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (apiKey) {
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      }
-
-      const requestBody = {
-        model: llmConfig.llmModel || "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 4000,
-        temperature: llmConfig.temperature || 0.8,
-      };
-
-      console.log(`Sending LLM Deep Research request to ${endpoint}`, {
-        model: requestBody.model,
-        max_tokens: requestBody.max_tokens,
-        temperature: requestBody.temperature,
-        hasApiKey: !!apiKey,
-      });
-
-      let llmResponse;
-      try {
-        llmResponse = await fetch(endpoint, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(requestBody),
-        });
-      } catch (fetchError: any) {
-        console.error(`Fetch error during LLM Deep Research:`, fetchError);
-        throw new Error(
-          `Failed to connect to LLM endpoint: ${fetchError.message}`,
-        );
-      }
-
-      if (!llmResponse.ok) {
-        const errorBody = await llmResponse.text();
-        console.error(`LLM Deep Research request failed:`, {
-          status: llmResponse.status,
-          statusText: llmResponse.statusText,
-          endpoint,
-          model: requestBody.model,
-          errorBody,
-        });
-        throw new Error(
-          `LLM API request failed with status ${llmResponse.status}: ${errorBody}`,
-        );
-      }
-
-      let llmResult;
-      try {
-        llmResult = (await llmResponse.json()) as any;
-      } catch (parseError: any) {
-        console.error(`Failed to parse LLM response as JSON:`, parseError);
-        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
-      }
-
-      const deepResearch = llmResult.choices?.[0]?.message?.content;
-      const finishReason = llmResult.choices?.[0]?.finish_reason;
-
-      if (!deepResearch) {
-        console.error(
-          `Unexpected LLM response structure:`,
-          JSON.stringify(llmResult),
-        );
-        throw new Error(
-          "Failed to extract deep research from LLM response. Check server logs for response structure.",
-        );
-      }
-
-      console.log(
-        `LLM Deep Research complete. Length: ${deepResearch.length} chars. Finish reason: ${finishReason}`,
+      const deepResearch = await handleLlmRequest(
+        req.params.id,
+        "Deep Research",
+        llmConfig.deepResearchPrompt || DEFAULT_PROMPTS.deepResearch,
+        0.8,
       );
-      if (deepResearch.length > 0) {
-        console.log(
-          `Response start: ${deepResearch.substring(0, 100).replace(/\n/g, " ")}...`,
-        );
-      }
-
       res.json({ deepResearch });
     } catch (error: any) {
       console.error("Deep research error:", error);
@@ -1454,112 +1221,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/articles/:id/counterpoints", async (req, res) => {
     try {
-      const { id } = req.params;
-      let article = await storage.getArticle(id);
-
-      if (!article) {
-        return res.status(404).json({ error: "Article not found" });
-      }
-
-      article = await ensureFullArticleContent(article);
-
-      if (!article.content) {
-        return res.status(404).json({ error: "Article content not found" });
-      }
-
       const llmConfig = await storage.getLlmConfig();
-      const endpoint = normalizeLlmEndpoint(llmConfig.endpoint || "");
-
-      const promptTemplate =
-        llmConfig.counterpointsPrompt || DEFAULT_PROMPTS.counterpoints;
-
-      const plainTextContent = cheerio.load(article.content).text();
-      const truncatedContent =
-        plainTextContent.length > 40000
-          ? plainTextContent.slice(0, 40000) + "... [truncated]"
-          : plainTextContent;
-      const prompt = promptTemplate.replace("{article_text}", truncatedContent);
-
-      const apiKey = await getLlmApiKey();
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (apiKey) {
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      }
-
-      const requestBody = {
-        model: llmConfig.llmModel || "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: llmConfig.max_tokens || 4000,
-        temperature: llmConfig.temperature || 0.8,
-      };
-
-      console.log(`Sending LLM Counterpoints request to ${endpoint}`, {
-        model: requestBody.model,
-        max_tokens: requestBody.max_tokens,
-        temperature: requestBody.temperature,
-        hasApiKey: !!apiKey,
-      });
-
-      let llmResponse;
-      try {
-        llmResponse = await fetch(endpoint, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(requestBody),
-        });
-      } catch (fetchError: any) {
-        console.error(`Fetch error during LLM Counterpoints:`, fetchError);
-        throw new Error(
-          `Failed to connect to LLM endpoint: ${fetchError.message}`,
-        );
-      }
-
-      if (!llmResponse.ok) {
-        const errorBody = await llmResponse.text();
-        console.error(`LLM Counterpoints request failed:`, {
-          status: llmResponse.status,
-          statusText: llmResponse.statusText,
-          endpoint,
-          model: requestBody.model,
-          errorBody,
-        });
-        throw new Error(
-          `LLM API request failed with status ${llmResponse.status}: ${errorBody}`,
-        );
-      }
-
-      let llmResult;
-      try {
-        llmResult = (await llmResponse.json()) as any;
-      } catch (parseError: any) {
-        console.error(`Failed to parse LLM response as JSON:`, parseError);
-        throw new Error(`Failed to parse LLM response: ${parseError.message}`);
-      }
-
-      const counterpoints = llmResult.choices?.[0]?.message?.content;
-      const finishReason = llmResult.choices?.[0]?.finish_reason;
-
-      if (!counterpoints) {
-        console.error(
-          `Unexpected LLM response structure:`,
-          JSON.stringify(llmResult),
-        );
-        throw new Error(
-          "Failed to extract counterpoints from LLM response. Check server logs for response structure.",
-        );
-      }
-
-      console.log(
-        `LLM Counterpoints complete. Length: ${counterpoints.length} chars. Finish reason: ${finishReason}`,
+      const counterpoints = await handleLlmRequest(
+        req.params.id,
+        "Counterpoints",
+        llmConfig.counterpointsPrompt || DEFAULT_PROMPTS.counterpoints,
+        0.8,
       );
-      if (counterpoints.length > 0) {
-        console.log(
-          `Response start: ${counterpoints.substring(0, 100).replace(/\n/g, " ")}...`,
-        );
-      }
-
       res.json({ counterpoints });
     } catch (error: any) {
       console.error("Counterpoints error:", error);
