@@ -54,7 +54,7 @@ npm run test              # unit/integration
 npm run test:e2e          # Playwright E2E tests
 ```
 
-Run E2E tests once to install browsers:
+Install the required browser before running E2E tests:
 
 ```bash
 npx playwright install chromium
