@@ -22,14 +22,6 @@ const SERVER_URL = `http://localhost:${PORT}`;
 
 
 
-// Try to resolve resources path early (may fail in unpackaged context)
-let appResourcesPath: string | null = null;
-try {
-  appResourcesPath = app.getPath('resources');
-} catch (e) {
-  console.warn('[electron] Failed to get resources path:', e);
-}
-
 // Single-instance lock
 const singleInstanceLock = app.requestSingleInstanceLock();
 if (!singleInstanceLock) {
@@ -82,19 +74,14 @@ async function startExpressServer() {
   // Ensure data directory exists and lazily init the database
   const baseDir = await getBaseDir();
   ensureDir(baseDir);
-  const db = await getDb();
-  const sqliteClient = (db as any).$client;
-  await initializeDatabase(sqliteClient);
+  const { sqlite } = await getDb();
+  await initializeDatabase(sqlite);
 
   // Register routes and get HTTP server
   httpServer = await registerRoutes(expressApp);
 
   // Serve static files from dist/public (Vite build output)
-  // In production (packaged), use resources path; in dev, use project root
-  // If not packaged or resources path unavailable, fall back to dev paths
-  const distPublic = (app.isPackaged && appResourcesPath)
-    ? path.join(appResourcesPath, "app", "dist", "public")
-    : path.resolve(__dirname, "..", "..", "dist", "public");
+  const distPublic = path.join(app.getAppPath(), "dist", "public");
   expressApp.use(express.static(distPublic));
   expressApp.get("*", (_req, res) => {
     res.sendFile(path.join(distPublic, "index.html"));
@@ -122,8 +109,8 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: "Curi-RSS",
-    icon: (app.isPackaged && appResourcesPath)
-      ? path.join(appResourcesPath, "public", "favicon.ico")
+    icon: app.isPackaged
+      ? path.join(process.resourcesPath, "public", "favicon.ico")
       : path.resolve(__dirname, "..", "..", "client", "public", "favicon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -167,7 +154,7 @@ ipcMain.handle("close-window", () => {
 });
 
 // Restore or create window when second instance launches
-app.on("secondInstance", () => {
+(app as any).on("secondInstance", () => {
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();

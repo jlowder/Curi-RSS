@@ -14,7 +14,7 @@
     "db:push": "drizzle-kit push",
     "build:electron": "esbuild electron/main.ts --platform=node --packages=external --bundle --format=esm --outdir=electron/dist --outbase=electron && cp electron/preload.cjs electron/dist/",
     "electron:dev": "npm run build:electron && NODE_ENV=development electron electron/dist/main.js",
-    "electron:build": "vite build && bun run build:electron && electron-builder --config electron-builder.config.js",
+    "electron:build": "vite build && npm run build:electron && electron-builder --config electron-builder.config.js",
     "electron:start": "NODE_ENV=production electron electron/dist/main.js"
   },
   "dependencies": {

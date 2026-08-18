@@ -50,6 +50,15 @@ const config = {
   ],
 
   /**
+   * macOS-specific configuration
+   */
+  mac: {
+    target: ["dmg", "zip"],
+    category: "public.app-category.news",
+    icon: "client/public/logo.png",
+  },
+
+  /**
    * AppImage-specific configuration
    */
   linux: {

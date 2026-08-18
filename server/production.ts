@@ -59,7 +59,9 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize database first
-  await initializeDatabase();
+  const { getDb } = await import("./db");
+  const { sqlite } = await getDb();
+  await initializeDatabase(sqlite);
   
   const server = await registerRoutes(app);
 
