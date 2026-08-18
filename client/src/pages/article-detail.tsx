@@ -382,9 +382,13 @@ export default function ArticleDetail({}: ArticleDetailProps) {
 
         {/* Article header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
-            {article.title}
-          </h1>
+          <div className="text-3xl font-bold text-white mb-4 leading-tight">
+            <FormattedMarkdown
+              content={article.title}
+              className="text-3xl font-bold text-white leading-tight prose prose-invert max-w-none [&_p]:inline [&_p]:m-0"
+              allowHtml={false}
+            />
+          </div>
 
           {/* Article meta information */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6">
@@ -418,7 +422,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
           {/* Article description */}
           {article.description && (
             <div className="text-lg text-gray-300 leading-relaxed mb-6">
-              <FormattedMarkdown content={truncate(article.description, 128)} />
+              <FormattedMarkdown content={article.description} />
             </div>
           )}
 

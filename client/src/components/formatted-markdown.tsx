@@ -16,20 +16,31 @@ export function preprocessMath(text: string): string {
   if (!text) return "";
   let processed = text;
 
-  // 1. Convert \( ... \) to $ ... $
-  processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, "$$$1$$");
+  // 1. Convert \( ... \) and \\( ... \\) to $ ... $
+  processed = processed.replace(/\\{1,2}\(([\s\S]*?)\\{1,2}\)/g, (_, inner) => `$${inner}$`);
 
-  // 2. Convert \[ ... \] to $$ ... $$
-  processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, "$$$$$1$$$$");
+  // 2. Convert \[ ... \] and \\[ ... \\] to $$ ... $$
+  processed = processed.replace(/\\{1,2}\[([\s\S]*?)\\{1,2}\]/g, (_, inner) => `$$${inner}$$`);
 
-  // 3. Convert parenthetical expressions (...) containing LaTeX math commands (\something)
-  // or subscripts/superscripts into inline $...$ math blocks.
+  // 3. Convert parenthetical expressions (...) containing LaTeX commands (\something)
+  // or subscripts/superscripts or math symbols into inline $...$ math blocks.
   processed = processed.replace(/\(((?:[^()]+|\([^()]*\))+)\)/g, (match, inner) => {
     if (
-      /\\(?:[a-zA-Z]+|[^\w\s])/.test(inner) ||
+      /\\{1,2}(?:[a-zA-Z]+|[^\w\s])/.test(inner) ||
       /_[0-9a-zA-Z{}]+|\^[0-9a-zA-Z{}]+/.test(inner)
     ) {
       return `$${inner}$`;
+    }
+    return match;
+  });
+
+  // 4. Convert bracketed expressions [...] containing LaTeX commands or subscripts/superscripts into $$...$$
+  processed = processed.replace(/\[((?:[^[\]]+|\[[^[\]]*\])+)\]/g, (match, inner) => {
+    if (
+      /\\{1,2}(?:[a-zA-Z]+|[^\w\s])/.test(inner) ||
+      /_[0-9a-zA-Z{}]+|\^[0-9a-zA-Z{}]+/.test(inner)
+    ) {
+      return `$$${inner}$$`;
     }
     return match;
   });
@@ -80,7 +91,7 @@ export function FormattedMarkdown({
   if (!content) return null;
 
   const preprocessed = preprocessMath(content);
-  const mathRendered = renderMathInText(preprocessed);
+  const mathRendered = allowHtml ? renderMathInText(preprocessed) : preprocessed;
   const rehypePlugins = allowHtml
     ? [rehypeRaw, rehypeKatex]
     : [rehypeKatex];
