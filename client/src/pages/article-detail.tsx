@@ -29,51 +29,11 @@ import { toast } from "@/hooks/use-toast";
 import { truncate } from "@/lib/utils";
 import type { ArticleWithFeed, LlmConfig } from "@shared/schema";
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import DOMPurify from "dompurify";
+import { FormattedMarkdown } from "@/components/formatted-markdown";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { AiChatSection } from "@/components/ai-chat-section";
 
 interface ArticleDetailProps {}
-
-function SafeHtmlContent({ content }: { content: string | null }) {
-  if (!content) {
-    return <div className="text-gray-400">No content available</div>;
-  }
-
-  const clean = DOMPurify.sanitize(content, {
-    ALLOWED_TAGS: [
-      "p",
-      "br",
-      "b",
-      "i",
-      "em",
-      "strong",
-      "ul",
-      "ol",
-      "li",
-      "a",
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "blockquote",
-      "pre",
-      "code",
-    ],
-    ALLOWED_ATTR: ["href"],
-  });
-
-  return (
-    <div
-      className="text-gray-300 prose prose-invert max-w-none"
-      dangerouslySetInnerHTML={{ __html: clean }}
-    />
-  );
-}
 
 export default function ArticleDetail({}: ArticleDetailProps) {
   const { id } = useParams<{ id: string }>();
@@ -458,7 +418,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
           {/* Article description */}
           {article.description && (
             <div className="text-lg text-gray-300 leading-relaxed mb-6">
-              <SafeHtmlContent content={truncate(article.description, 128)} />
+              <FormattedMarkdown content={truncate(article.description, 128)} />
             </div>
           )}
 
@@ -583,9 +543,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                   title="Article Summary"
                   icon={<Sparkles className="w-5 h-5 text-yellow-400" />}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {summary}
-                  </ReactMarkdown>
+                  <FormattedMarkdown content={summary} />
                 </CollapsibleSection>
               )}
               {referencedInfo && (
@@ -594,9 +552,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                     title="Referenced Information"
                     icon={<Info className="w-5 h-5 text-blue-400" />}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {referencedInfo}
-                    </ReactMarkdown>
+                    <FormattedMarkdown content={referencedInfo} />
                   </CollapsibleSection>
                 </div>
               )}
@@ -606,9 +562,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                     title="Deep Research Prompts"
                     icon={<FlaskConical className="w-5 h-5 text-green-400" />}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {deepResearch}
-                    </ReactMarkdown>
+                    <FormattedMarkdown content={deepResearch} />
                   </CollapsibleSection>
                 </div>
               )}
@@ -618,13 +572,11 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                     title="Counterpoints"
                     icon={<ShieldAlert className="w-5 h-5 text-orange-400" />}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {counterpoints}
-                    </ReactMarkdown>
+                    <FormattedMarkdown content={counterpoints} />
                   </CollapsibleSection>
                 </div>
               )}
-              <SafeHtmlContent content={article.content} />
+              <FormattedMarkdown content={article.content} />
             </div>
           ) : (
             <div className="text-center py-12">
@@ -638,7 +590,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                 {article.description && (
                   <div className="text-sm text-gray-300 max-w-md mx-auto mb-4 p-4 bg-gray-900 rounded border-l-4 border-blue-500">
                     <strong>Summary:</strong>{" "}
-                    <SafeHtmlContent content={article.description} />
+                    <FormattedMarkdown content={article.description} />
                   </div>
                 )}
               </div>
