@@ -12,3 +12,6 @@ test-results/
 playwright-report/
 .genkit/
 .pi/
+.understand-anything/
+release/
+bun.lock
