@@ -25,12 +25,15 @@ const config = {
     "node_modules/**/*",
     "package.json",
   ],
-
+  asar: true,
+  asarUnpack: [
+    "node_modules/better-sqlite3/**/*"
+  ],
   /**
    * Native modules pre-built by prebuild script during electron:build
    */
   buildDependenciesFromSource: false,
-  npmRebuild: false,
+  npmRebuild: true,
 
   /**
    * Files to exclude from the build
