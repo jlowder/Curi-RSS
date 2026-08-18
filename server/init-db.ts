@@ -1,8 +1,8 @@
-import type Database from "better-sqlite3";
+import Database from "better-sqlite3";
 
 // Initialize database tables using a better-sqlite3 connection directly
 // (no longer uses (db as any).client)
-export async function initializeDatabase(sqliteClient: Database) {
+export async function initializeDatabase(sqliteClient: InstanceType<typeof Database>) {
   try {
     // Create tables if they don't exist
     sqliteClient.exec(`
