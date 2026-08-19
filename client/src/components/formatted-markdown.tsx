@@ -23,27 +23,78 @@ export function preprocessMath(text: string): string {
   processed = processed.replace(/\\{1,2}\[([\s\S]*?)\\{1,2}\]/g, (_, inner) => `$$${inner}$$`);
 
   // 3. Convert parenthetical expressions (...) containing LaTeX commands (\something)
-  // or subscripts/superscripts or math symbols into inline $...$ math blocks.
-  processed = processed.replace(/\(((?:[^()]+|\([^()]*\))+)\)/g, (match, inner) => {
-    if (
-      /\\{1,2}(?:[a-zA-Z]+|[^\w\s])/.test(inner) ||
-      /_[0-9a-zA-Z{}]+|\^[0-9a-zA-Z{}]+/.test(inner)
-    ) {
-      return `$${inner}$`;
+  // or subscripts/superscripts into inline $...$ math blocks using a linear scan (O(N))
+  // to prevent catastrophic regex backtracking on unclosed or long text.
+  if (processed.includes("(")) {
+    let result = "";
+    let i = 0;
+    const len = processed.length;
+
+    while (i < len) {
+      if (processed[i] === "(") {
+        let depth = 1;
+        let j = i + 1;
+        while (j < len && depth > 0) {
+          if (processed[j] === "(") depth++;
+          else if (processed[j] === ")") depth--;
+          j++;
+        }
+
+        if (depth === 0) {
+          const inner = processed.substring(i + 1, j - 1);
+          if (
+            /\\{1,2}(?:[a-zA-Z]+|[^\w\s])/.test(inner) ||
+            /_[0-9a-zA-Z{}]+|\^[0-9a-zA-Z{}]+/.test(inner)
+          ) {
+            result += `$${inner}$`;
+          } else {
+            result += processed.substring(i, j);
+          }
+          i = j;
+          continue;
+        }
+      }
+      result += processed[i];
+      i++;
     }
-    return match;
-  });
+    processed = result;
+  }
 
   // 4. Convert bracketed expressions [...] containing LaTeX commands or subscripts/superscripts into $$...$$
-  processed = processed.replace(/\[((?:[^[\]]+|\[[^[\]]*\])+)\]/g, (match, inner) => {
-    if (
-      /\\{1,2}(?:[a-zA-Z]+|[^\w\s])/.test(inner) ||
-      /_[0-9a-zA-Z{}]+|\^[0-9a-zA-Z{}]+/.test(inner)
-    ) {
-      return `$$${inner}$$`;
+  if (processed.includes("[")) {
+    let result = "";
+    let i = 0;
+    const len = processed.length;
+
+    while (i < len) {
+      if (processed[i] === "[") {
+        let depth = 1;
+        let j = i + 1;
+        while (j < len && depth > 0) {
+          if (processed[j] === "[") depth++;
+          else if (processed[j] === "]") depth--;
+          j++;
+        }
+
+        if (depth === 0) {
+          const inner = processed.substring(i + 1, j - 1);
+          if (
+            /\\{1,2}(?:[a-zA-Z]+|[^\w\s])/.test(inner) ||
+            /_[0-9a-zA-Z{}]+|\^[0-9a-zA-Z{}]+/.test(inner)
+          ) {
+            result += `$$${inner}$$`;
+          } else {
+            result += processed.substring(i, j);
+          }
+          i = j;
+          continue;
+        }
+      }
+      result += processed[i];
+      i++;
     }
-    return match;
-  });
+    processed = result;
+  }
 
   return processed;
 }
