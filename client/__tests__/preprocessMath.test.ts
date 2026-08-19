@@ -32,4 +32,15 @@ describe("preprocessMath and renderMathInText", () => {
     const processed = preprocessMath(input);
     expect(processed).toContain("$$\\mathbf{b}_i^t = {b_i^t(s)}$$");
   });
+
+  it("does not corrupt HTML tags or image srcset with url parameters like w_36,h_36", () => {
+    const substackHtml = `<img src="https://substackcdn.com/image/fetch/s!TYXN!,w_36,h_36,c_fill/https%3A%2F%2Fexample.com%2Fimg.jpeg" alt="Big Think" srcset="https://substackcdn.com/image/fetch/s!TYXN!,w_36,h_36,c_fill/https%3A%2F%2Fexample.com%2Fimg.jpeg 2x">`;
+    const processed = preprocessMath(substackHtml);
+    expect(processed).toBe(substackHtml);
+    expect(processed).not.toContain("$");
+
+    const rendered = renderMathInText(processed);
+    expect(rendered).toBe(substackHtml);
+    expect(rendered).not.toContain("katex");
+  });
 });
