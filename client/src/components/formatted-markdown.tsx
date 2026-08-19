@@ -148,6 +148,113 @@ function processOutsideHtmlTags(input: string, transformText: (text: string) => 
  * and (...) parens containing math expressions) to standard $...$ / $$...$$ math syntax,
  * while safely ignoring HTML tags and attributes.
  */
+/**
+ * Cleans HTML string on the frontend using DOMParser to strip unplayable player shells,
+ * empty padding containers, broken aspect ratio elements, and embedded post previews.
+ */
+export function cleanHtmlFrontend(html: string): string {
+  if (!html || !html.includes("<")) {
+    return html;
+  }
+  if (typeof DOMParser !== "undefined") {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+
+      // 1. Remove scripts, styles, nav, aside, ads, comments, headers/footers
+      doc
+        .querySelectorAll(
+          "script, style, nav, aside, .advertisement, .social-share, .related-posts, .comments, .sidebar, .navigation, .nav, .footer, .header, .ad, .ads, svg",
+        )
+        .forEach((el) => el.remove());
+
+      // 2. Remove unplayable video/audio JS player shells & placeholders
+      doc
+        .querySelectorAll(
+          ".shows-video-player-container, .shows-video-player-shell-area, [class*='playerShell'], [class*='playerRoot'], [class*='shows-video'], .video-player-with-background, [class*='video-player'], [class*='audio-player'], [class*='media-player'], .player-container, .embed-placeholder, .media-wrapper",
+        )
+        .forEach((el) => el.remove());
+
+      // 3. Remove embedded post preview recommendations inside article
+      doc
+        .querySelectorAll(
+          "[role='article'], .post-preview, [data-testid*='post-preview'], .related-articles, .recommended-posts",
+        )
+        .forEach((el) => el.remove());
+
+      // 4. Remove empty or invalid iframes
+      doc.querySelectorAll("iframe").forEach((el) => {
+        const src = el.getAttribute("src");
+        if (
+          !src ||
+          !src.trim() ||
+          src.startsWith("about:blank") ||
+          src.startsWith("javascript:")
+        ) {
+          el.remove();
+        }
+      });
+
+      // 5. Clean elements with padding-top/bottom or height/aspect-ratio inline styles if they contain no media or text
+      doc.querySelectorAll("[style]").forEach((el) => {
+        const style = el.getAttribute("style") || "";
+        if (
+          /padding-(top|bottom)\s*:\s*\d+(\.\d+)?%/i.test(style) ||
+          /height\s*:\s*\d+/i.test(style) ||
+          /aspect-ratio/i.test(style)
+        ) {
+          if (
+            !el.querySelector("img, iframe, video, audio") &&
+            !(el.textContent || "").trim()
+          ) {
+            el.remove();
+          }
+        }
+      });
+
+      // 6. Iteratively remove empty containers that have no text and no media
+      for (let pass = 0; pass < 3; pass++) {
+        let removedAny = false;
+        doc
+          .querySelectorAll("div, p, section, figure, span")
+          .forEach((el) => {
+            if (
+              el.children.length === 0 &&
+              !(el.textContent || "").trim()
+            ) {
+              const tagName = el.tagName.toLowerCase();
+              if (
+                !["img", "iframe", "video", "audio", "hr", "br"].includes(
+                  tagName,
+                )
+              ) {
+                el.remove();
+                removedAny = true;
+              }
+            }
+          });
+        if (!removedAny) break;
+      }
+
+      return doc.body.innerHTML;
+    } catch {
+      return html;
+    }
+  }
+
+  // Fallback for environments without DOMParser (e.g., Node unit test environment)
+  let cleaned = html;
+  cleaned = cleaned.replace(
+    /<div[^>]*class="[^"]*(?:shows-video-player|playerShell|playerRoot|video-player)[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+    "",
+  );
+  cleaned = cleaned.replace(
+    /<div[^>]*style="[^"]*padding-(?:bottom|top)\s*:\s*\d+(?:\.\d+)?%[^"]*"[^>]*>\s*<\/div>/gi,
+    "",
+  );
+  return cleaned;
+}
+
 export function preprocessMath(text: string): string {
   return processOutsideHtmlTags(text, preprocessMathSegment);
 }
@@ -195,7 +302,8 @@ export function FormattedMarkdown({
 }: FormattedMarkdownProps) {
   if (!content) return null;
 
-  const preprocessed = preprocessMath(content);
+  const cleanedHtml = allowHtml ? cleanHtmlFrontend(content) : content;
+  const preprocessed = preprocessMath(cleanedHtml);
   const mathRendered = allowHtml ? renderMathInText(preprocessed) : preprocessed;
   const rehypePlugins = allowHtml
     ? [rehypeRaw, rehypeKatex]
