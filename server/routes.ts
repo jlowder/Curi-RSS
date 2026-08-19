@@ -85,16 +85,80 @@ async function getLlmApiKey(): Promise<string | null> {
   }
 }
 
-function cleanDescription(html: string | null | undefined): string {
-  if (!html) {
+export function cleanArticleHtml(rawHtml: string | null | undefined): string {
+  if (!rawHtml) {
     return "";
   }
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(rawHtml, null, false);
 
-  // Remove <style> and <script> tags
-  $("style, script").remove();
+  // 1. Remove scripts, styles, nav, aside, ads, comments, headers/footers, etc.
+  $(
+    "script, style, nav, aside, .advertisement, .social-share, .related-posts, .comments, .sidebar, .navigation, .nav, .footer, .header, .ad, .ads, svg",
+  ).remove();
 
-  return $("body").html() || $.html();
+  // 2. Remove unplayable video/audio JS player shells & placeholders
+  $(
+    ".shows-video-player-container, .shows-video-player-shell-area, [class*='playerShell'], [class*='playerRoot'], [class*='shows-video'], .video-player-with-background, [class*='video-player'], [class*='audio-player'], [class*='media-player'], .player-container, .embed-placeholder, .media-wrapper",
+  ).remove();
+
+  // 3. Remove embedded post preview recommendations inside article
+  $(
+    "[role='article'], .post-preview, [data-testid*='post-preview'], .related-articles, .recommended-posts",
+  ).remove();
+
+  // 4. Remove empty or invalid iframes
+  $("iframe").each((_, el) => {
+    const src = $(el).attr("src");
+    if (
+      !src ||
+      src.trim() === "" ||
+      src.startsWith("about:blank") ||
+      src.startsWith("javascript:")
+    ) {
+      $(el).remove();
+    }
+  });
+
+  // 5. Clean elements with padding-top/bottom or height/aspect-ratio inline styles if they contain no media or text
+  $("[style]").each((_, el) => {
+    const $el = $(el);
+    const style = $el.attr("style") || "";
+    if (
+      /padding-(top|bottom)\s*:\s*\d+(\.\d+)?%/i.test(style) ||
+      /height\s*:\s*\d+/i.test(style) ||
+      /aspect-ratio/i.test(style)
+    ) {
+      if (
+        $el.find("img, iframe, video, audio").length === 0 &&
+        $el.text().trim().length === 0
+      ) {
+        $el.remove();
+      }
+    }
+  });
+
+  // 6. Iteratively remove empty containers that have no text and no media
+  let changed = true;
+  let passes = 0;
+  while (changed && passes < 3) {
+    changed = false;
+    passes++;
+    $("div, p, section, figure, span").each((_, el) => {
+      const $el = $(el);
+      if ($el.children().length === 0 && $el.text().trim().length === 0) {
+        if (!$el.is("img, iframe, video, audio, hr, br")) {
+          $el.remove();
+          changed = true;
+        }
+      }
+    });
+  }
+
+  return $.html();
+}
+
+function cleanDescription(html: string | null | undefined): string {
+  return cleanArticleHtml(html);
 }
 
 function getCategory(item: any): string | null {
@@ -201,7 +265,8 @@ async function extractFullArticleContent(
 
         // Get content and clean it up
         const rawContent = element.html() || "";
-        const textContent = element.text().trim();
+        const cleanedContent = cleanArticleHtml(rawContent);
+        const textContent = cheerio.load(cleanedContent).text().trim();
 
         console.log(
           `Selector "${selector}" found content length: ${textContent.length} chars`,
@@ -209,7 +274,7 @@ async function extractFullArticleContent(
 
         if (textContent.length > 500) {
           // Only use if substantial text content
-          articleContent = rawContent;
+          articleContent = cleanedContent;
           console.log(`Using content from selector: ${selector}`);
           break;
         }
@@ -242,7 +307,7 @@ async function extractFullArticleContent(
       });
 
       if (bestContent && maxLength > 500) {
-        articleContent = bestContent;
+        articleContent = cleanArticleHtml(bestContent);
         console.log(`Using fallback content with ${maxLength} chars`);
       }
 
@@ -270,7 +335,7 @@ async function extractFullArticleContent(
             bodyParagraphs &&
             $("<div>").html(bodyParagraphs).text().trim().length > 500
           ) {
-            articleContent = bodyParagraphs;
+            articleContent = cleanArticleHtml(bodyParagraphs);
             console.log(
               `Using body paragraphs with ${$("<div>").html(bodyParagraphs).text().trim().length} chars`,
             );
