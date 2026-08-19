@@ -91,28 +91,8 @@ function cleanDescription(html: string | null | undefined): string {
   }
   const $ = cheerio.load(html);
 
-  // Remove <style> and <script> tags first, as a baseline
+  // Remove <style> and <script> tags
   $("style, script").remove();
-
-  // Now, traverse all elements and look for text nodes that might contain CSS
-  $("*").each(function () {
-    $(this)
-      .contents()
-      .each(function () {
-        if (this.type === "text") {
-          const textNode = $(this);
-          let text = textNode.text();
-
-          // Heuristic: if a text node contains curly braces, it's likely CSS.
-          if (text.includes("{") && text.includes("}")) {
-            // This regex finds CSS-like rules and removes them.
-            const cssRegex = /\s*[^}{]*?\{[^}]*\}/g;
-            const newText = text.replace(cssRegex, "");
-            textNode.replaceWith(newText);
-          }
-        }
-      });
-  });
 
   return $("body").html() || $.html();
 }
