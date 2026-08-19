@@ -39,7 +39,9 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize database first
-  await initializeDatabase();
+  const { getDb } = await import("./db");
+  const { sqlite } = await getDb();
+  await initializeDatabase(sqlite);
 
   // Run automatic cleanup on startup
   try {
@@ -79,7 +81,6 @@ app.use((req, res, next) => {
   server.listen({
     port,
     host: "0.0.0.0",
-    reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
   });

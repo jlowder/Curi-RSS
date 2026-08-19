@@ -633,7 +633,7 @@ export class DatabaseStorage implements IStorage {
     feedId?: string,
     category?: string,
   ): Promise<ArticleWithFeed[]> {
-    let conditions = [eq(feeds.isActive, true)];
+    let conditions: any[] = [eq(feeds.isActive, true)];
 
     if (query) {
       conditions.push(
@@ -653,9 +653,8 @@ export class DatabaseStorage implements IStorage {
     if (category === "unread") {
       conditions.push(or(eq(articles.isRead, false), isNull(articles.isRead)));
     } else if (category === "read") {
-      conditions.push(
-        and(eq(articles.isRead, true), eq(articles.isBookmarked, false))!,
-      );
+      const readCond = and(eq(articles.isRead, true), eq(articles.isBookmarked, false));
+      if (readCond) conditions.push(readCond as any);
     } else if (category === "saved") {
       conditions.push(eq(articles.isBookmarked, true));
     } else if (category === "queued") {

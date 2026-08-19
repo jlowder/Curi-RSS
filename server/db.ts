@@ -6,6 +6,7 @@ import fs from "fs";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 export let db: ReturnType<typeof drizzle>;
+export let sqlite: InstanceType<typeof Database>;
 
 async function getBaseDir(): Promise<string> {
   try {
@@ -27,7 +28,7 @@ function ensureDir(dirPath: string) {
 }
 
 export async function getDb() {
-  if (_db) return _db;
+  if (_db) return { db: _db, sqlite };
   
   const baseDir = await getBaseDir();
   
@@ -48,7 +49,7 @@ export async function getDb() {
   ensureDir(path.dirname(dbPath));
   
   try {
-    const sqlite = new Database(dbPath);
+    sqlite = new Database(dbPath);
     _db = drizzle({ client: sqlite, schema });
     db = _db;
     console.log(`Database opened at: ${dbPath}`);
@@ -58,7 +59,7 @@ export async function getDb() {
     const fallbackPath = path.join(process.cwd(), "rss.db");
     console.warn("Trying fallback path:", fallbackPath);
     try {
-      const sqlite = new Database(fallbackPath);
+      sqlite = new Database(fallbackPath);
       _db = drizzle({ client: sqlite, schema });
       db = _db;
     } catch (fallbackErr) {
@@ -67,7 +68,7 @@ export async function getDb() {
     }
   }
   
-  return _db;
+  return { db: _db, sqlite };
 }
 
 export { getBaseDir, ensureDir };

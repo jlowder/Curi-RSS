@@ -6,8 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Send, User, Bot, MessageSquare, X, AlertCircle, RefreshCw } from "lucide-react";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { FormattedMarkdown } from '@/components/formatted-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -118,11 +117,10 @@ export function AiChatSection({ articleId, onClose }: AiChatSectionProps) {
                       : 'bg-gray-800 border border-gray-700 text-gray-200'
                   }`}
                 >
-                  <div className="prose prose-invert prose-sm max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.content}
-                    </ReactMarkdown>
-                  </div>
+                  <FormattedMarkdown
+                    content={msg.content}
+                    className="prose prose-invert prose-sm max-w-none"
+                  />
                 </div>
               </div>
             </div>

@@ -25,12 +25,15 @@ const config = {
     "node_modules/**/*",
     "package.json",
   ],
-
+  asar: true,
+  asarUnpack: [
+    "node_modules/better-sqlite3/**/*"
+  ],
   /**
    * Native modules pre-built by prebuild script during electron:build
    */
   buildDependenciesFromSource: false,
-  npmRebuild: false,
+  npmRebuild: true,
 
   /**
    * Files to exclude from the build
@@ -45,6 +48,15 @@ const config = {
   extraResources: [
     { from: "client/public", to: "public" },
   ],
+
+  /**
+   * macOS-specific configuration
+   */
+  mac: {
+    target: ["dmg", "zip"],
+    category: "public.app-category.news",
+    icon: "client/public/logo.png",
+  },
 
   /**
    * AppImage-specific configuration

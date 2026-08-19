@@ -12,10 +12,9 @@
     "test": "vitest",
     "test:e2e": "npx playwright test",
     "db:push": "drizzle-kit push",
-    "prebuild:electron": "npx @electron/rebuild -v 42.4.0",
     "build:electron": "esbuild electron/main.ts --platform=node --packages=external --bundle --format=esm --outdir=electron/dist --outbase=electron && cp electron/preload.cjs electron/dist/",
-    "electron:dev": "npm run prebuild:electron && npm run build:electron && NODE_ENV=development electron electron/dist/main.js",
-    "electron:build": "npm run prebuild:electron && vite build && npm run build:electron && electron-builder --config electron-builder.config.js",
+    "electron:dev": "npm run build:electron && NODE_ENV=development electron electron/dist/main.js",
+    "electron:build": "vite build && npm run build:electron && electron-builder --config electron-builder.config.js",
     "electron:start": "NODE_ENV=production electron electron/dist/main.js"
   },
   "dependencies": {
@@ -69,6 +68,7 @@
     "express-session": "^1.18.1",
     "framer-motion": "^11.13.1",
     "input-otp": "^1.4.2",
+    "katex": "^0.18.4",
     "keytar": "^7.9.0",
     "lucide-react": "^0.453.0",
     "memorystore": "^1.6.7",
@@ -87,7 +87,10 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.9",
     "recharts": "^2.15.2",
+    "rehype-katex": "^7.0.1",
+    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "rss-parser": "^3.13.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
@@ -128,5 +131,21 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.10.1": true,
+    "bufferutil@4.1.0": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.19.12": true,
+    "esbuild@0.27.2": true,
+    "esbuild@0.21.5": true,
+    "esbuild@0.18.20": true,
+    "keytar@7.9.0": true,
+    "puppeteer@24.34.0": true,
+    "isexe@4.0.0": true,
+    "fsevents@2.3.3": true,
+    "fsevents@2.3.2": true,
+    "lzma-native@8.0.6": true
   }
 }
