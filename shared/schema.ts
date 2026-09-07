@@ -119,6 +119,8 @@ export const llmConfigSchema = z.object({
   additionalInfoPrompt: z.string().optional(),
   deepResearchEnabled: z.boolean().default(true),
   deepResearchPrompt: z.string().optional(),
+  deepReachEnabled: z.boolean().default(false),
+  deepReachEndpoint: z.string().url().or(z.literal("")).optional(),
   discussEnabled: z.boolean().default(true),
   discussPrompt: z.string().optional(),
   counterpointsEnabled: z.boolean().default(true),
