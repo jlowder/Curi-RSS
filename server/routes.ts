@@ -1303,10 +1303,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { task_id, status, current_step, links } = data;
         return res.status(202).json({ task_id, status, current_step, links });
       }
-      return res.status(upstream.status).json({
-        ...data,
-        error: data.error || `Deep Reach returned ${upstream.status}`,
-      });
+      if (upstream.status >= 400) {
+        return res.status(upstream.status).json({
+          ...data,
+          error: data.error || `Deep Reach returned ${upstream.status}`,
+        });
+      }
+      return res.status(upstream.status).json(data);
     } catch (error: any) {
       console.error("Deep reach error:", error);
       res.status(502).json({
