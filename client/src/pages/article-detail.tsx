@@ -28,26 +28,18 @@ import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { truncate } from "@/lib/utils";
+import { parseDeepResearchSections, type DeepResearchSections } from "@/lib/parse-deep-research";
 import type { ArticleWithFeed, LlmConfig } from "@shared/schema";
 import { useState } from "react";
 import { FormattedMarkdown } from "@/components/formatted-markdown";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { AiChatSection } from "@/components/ai-chat-section";
 
-function parseDeepResearchQuestions(markdown: string): string[] {
-  return markdown
-    .split("\n")
-    .map((line) => line.match(/^\s*(?:[-*+]|\d+[.)])\s+(.*)/)?.[1] ?? "")
-    .map((q) =>
-      q
-        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-        .replace(/(\*\*|__)(.*?)\1/g, "$2")
-        .replace(/(\*|_)(.*?)\1/g, "$2")
-        .replace(/`/g, "")
-        .trim(),
-    )
-    .filter((q) => q.length > 0);
-}
+const EMPTY_DEEP_RESEARCH_SECTIONS: DeepResearchSections = {
+  knowledge: [],
+  deeper: [],
+  hasSections: false,
+};
 
 interface ArticleDetailProps {}
 
@@ -234,6 +226,23 @@ export default function ArticleDetail({}: ArticleDetailProps) {
     }
   };
 
+  const renderDeepReachButton = (index: number, q: string) => {
+    if (!llmConfig?.deepReachEnabled || !llmConfig?.deepReachEndpoint) {
+      return null;
+    }
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+        disabled={!!deepReachPending[index]}
+        onClick={() => handleDeepReach(index, q)}
+      >
+        <Rocket className="w-4 h-4" />
+      </Button>
+    );
+  };
+
   // Mark article as read after viewing for a few seconds (if not already read)
   useEffect(() => {
     if (
@@ -340,7 +349,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   };
 
   const hasContent = article.content && article.content.length > 100;
-  const questions = deepResearch ? parseDeepResearchQuestions(deepResearch) : [];
+  const sections = deepResearch
+    ? parseDeepResearchSections(deepResearch)
+    : EMPTY_DEEP_RESEARCH_SECTIONS;
 
   return (
     <div className="h-screen overflow-y-auto bg-gray-950 text-gray-100">
@@ -611,29 +622,58 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                     title="Deep Research Prompts"
                     icon={<FlaskConical className="w-5 h-5 text-green-400" />}
                   >
-                    {questions.length > 0 ? (
-                      <div className="space-y-1">
-                        {questions.map((q, i) => (
-                          <div
-                            key={i}
-                            className="flex items-start justify-between gap-3 py-1"
-                          >
-                            <span className="text-sm text-gray-300">{q}</span>
-                            {llmConfig?.deepReachEnabled &&
-                            llmConfig?.deepReachEndpoint ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
-                                disabled={!!deepReachPending[i]}
-                                onClick={() => handleDeepReach(i, q)}
-                              >
-                                <Rocket className="w-4 h-4 mr-2" />
-                              </Button>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
+                    {sections.knowledge.length > 0 || sections.deeper.length > 0 ? (
+                      !sections.hasSections ? (
+                        <div className="space-y-1">
+                          {sections.deeper.map((q, i) => (
+                            <div
+                              key={i}
+                              className="flex items-start justify-between gap-3 py-1"
+                            >
+                              <span className="text-sm text-gray-300">{q}</span>
+                              {renderDeepReachButton(i, q)}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <>
+                          {sections.knowledge.length > 0 && (
+                            <>
+                              <h3 className="text-sm font-semibold text-gray-400 mt-2 first:mt-0">
+                                Test Your Knowledge
+                              </h3>
+                              <div className="space-y-1">
+                                {sections.knowledge.map((q, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-start justify-between gap-3 py-1"
+                                  >
+                                    <span className="text-sm text-gray-300">{q}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {sections.deeper.length > 0 && (
+                            <>
+                              <h3 className="text-sm font-semibold text-gray-400 mt-2 first:mt-0">
+                                Go Deeper
+                              </h3>
+                              <div className="space-y-1">
+                                {sections.deeper.map((q, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-start justify-between gap-3 py-1"
+                                  >
+                                    <span className="text-sm text-gray-300">{q}</span>
+                                    {renderDeepReachButton(i, q)}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )
                     ) : (
                       <FormattedMarkdown content={deepResearch} />
                     )}
