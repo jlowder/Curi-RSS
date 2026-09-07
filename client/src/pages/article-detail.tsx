@@ -629,7 +629,6 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                                 onClick={() => handleDeepReach(i, q)}
                               >
                                 <Rocket className="w-4 h-4 mr-2" />
-                                {deepReachPending[i] ? "Starting..." : "Deep Reach"}
                               </Button>
                             ) : null}
                           </div>
