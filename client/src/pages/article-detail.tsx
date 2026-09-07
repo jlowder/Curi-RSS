@@ -22,16 +22,24 @@ import {
   FlaskConical,
   MessageSquare,
   ShieldAlert,
+  Rocket,
 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 import { truncate } from "@/lib/utils";
+import { parseDeepResearchSections, type DeepResearchSections } from "@/lib/parse-deep-research";
 import type { ArticleWithFeed, LlmConfig } from "@shared/schema";
 import { useState } from "react";
 import { FormattedMarkdown } from "@/components/formatted-markdown";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { AiChatSection } from "@/components/ai-chat-section";
+
+const EMPTY_DEEP_RESEARCH_SECTIONS: DeepResearchSections = {
+  knowledge: [],
+  deeper: [],
+  hasSections: false,
+};
 
 interface ArticleDetailProps {}
 
@@ -44,6 +52,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   const [deepResearch, setDeepResearch] = useState<string | null>(null);
   const [counterpoints, setCounterpoints] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
+  const [deepReachPending, setDeepReachPending] = useState<Record<number, boolean>>({});
 
   const {
     data: article,
@@ -190,6 +199,50 @@ export default function ArticleDetail({}: ArticleDetailProps) {
     },
   });
 
+  const handleDeepReach = async (index: number, question: string) => {
+    setDeepReachPending((prev) => ({ ...prev, [index]: true }));
+    try {
+      const response = await fetch("/api/deep-reach/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: question }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Deep Reach returned ${response.status}`);
+      }
+      toast({
+        title: "Deep Reach research started",
+        description: `Task ${data.task_id} is ${data.status === "pending" ? "queued" : "running"}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Deep Reach Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeepReachPending((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const renderDeepReachButton = (index: number, q: string) => {
+    if (!llmConfig?.deepReachEnabled || !llmConfig?.deepReachEndpoint) {
+      return null;
+    }
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+        disabled={!!deepReachPending[index]}
+        onClick={() => handleDeepReach(index, q)}
+      >
+        <Rocket className="w-4 h-4" />
+      </Button>
+    );
+  };
+
   // Mark article as read after viewing for a few seconds (if not already read)
   useEffect(() => {
     if (
@@ -296,6 +349,9 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   };
 
   const hasContent = article.content && article.content.length > 100;
+  const sections = deepResearch
+    ? parseDeepResearchSections(deepResearch)
+    : EMPTY_DEEP_RESEARCH_SECTIONS;
 
   return (
     <div className="h-screen overflow-y-auto bg-gray-950 text-gray-100">
@@ -566,7 +622,61 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                     title="Deep Research Prompts"
                     icon={<FlaskConical className="w-5 h-5 text-green-400" />}
                   >
-                    <FormattedMarkdown content={deepResearch} />
+                    {sections.knowledge.length > 0 || sections.deeper.length > 0 ? (
+                      !sections.hasSections ? (
+                        <div className="space-y-1">
+                          {sections.deeper.map((q, i) => (
+                            <div
+                              key={i}
+                              className="flex items-start justify-between gap-3 py-1"
+                            >
+                              <span className="text-sm text-gray-300">{q}</span>
+                              {renderDeepReachButton(i, q)}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <>
+                          {sections.knowledge.length > 0 && (
+                            <>
+                              <h3 className="text-sm font-semibold text-gray-400 mt-2 first:mt-0">
+                                Test Your Knowledge
+                              </h3>
+                              <div className="space-y-1">
+                                {sections.knowledge.map((q, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-start justify-between gap-3 py-1"
+                                  >
+                                    <span className="text-sm text-gray-300">{q}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {sections.deeper.length > 0 && (
+                            <>
+                              <h3 className="text-sm font-semibold text-gray-400 mt-2 first:mt-0">
+                                Go Deeper
+                              </h3>
+                              <div className="space-y-1">
+                                {sections.deeper.map((q, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-start justify-between gap-3 py-1"
+                                  >
+                                    <span className="text-sm text-gray-300">{q}</span>
+                                    {renderDeepReachButton(i, q)}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )
+                    ) : (
+                      <FormattedMarkdown content={deepResearch} />
+                    )}
                   </CollapsibleSection>
                 </div>
               )}

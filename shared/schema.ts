@@ -119,6 +119,8 @@ export const llmConfigSchema = z.object({
   additionalInfoPrompt: z.string().optional(),
   deepResearchEnabled: z.boolean().default(true),
   deepResearchPrompt: z.string().optional(),
+  deepReachEnabled: z.boolean().default(false),
+  deepReachEndpoint: z.string().url().or(z.literal("")).optional(),
   discussEnabled: z.boolean().default(true),
   discussPrompt: z.string().optional(),
   counterpointsEnabled: z.boolean().default(true),
@@ -153,7 +155,7 @@ export type FoundFeed = {
 export const DEFAULT_PROMPTS = {
   summarize: "Create a markdown-formatted summary of the following article. The summary should be structured with three sections using h2 headings: 'Key Findings', 'Conclusion', and 'Suggested Next Steps'. The 'Key Findings' section must be a bulleted list. Do not include any text outside of these three sections.\n\nArticle Text:\n{article_text}",
   additionalInfo: "Analyze the following article and provide two lists in markdown format. First, a concise list of the most prominent people, organizations, or products mentioned (limit to top 10). Second, a list of 3-5 suggested websites for further research on the topics discussed. The response should only contain these two lists and their headings. DO NOT repeat the article text and DO NOT be overly verbose.\n\nArticle Text:\n{article_text}",
-  deepResearch: "Based on the following article, generate a list of 5 thought-provoking prompts for deep research. The prompts should be suitable for a researcher or journalist to use as a starting point for a detailed investigation. The response should be a markdown-formatted list of these 5 prompts and nothing else. Do not repeat the article text.\n\nArticle Text:\n{article_text}",
+  deepResearch: "<article-to-analyze>\n{article_text}\n</article-to-analyze>\n<instructions>\nBased on the preceding article, structure the output as two 'h2' headings: Test Your Knowledge, and Go Deeper. Both of these should consist of a bulleted list. For the Test Your Knowledge section, generate 3 straightforward follow-on questions. For Go Deeper, generate 4 prompts for related deep-research prompts. Don't mention \"the article\" but rather include all necessary information. Each prompt must be completely self-contained. The response must be a markdown-formatted list of these 7 items (with their section titles) and nothing else.\n</instructions>",
   counterpoints: "Examine the following article with a critical eye and play devil's advocate. Provide a bulleted list of counterpoints to the main arguments presented in the article. Do not repeat the article text.\n\nArticle Text:\n{article_text}",
   discuss: "Summarize the article in one sentence, and ask the user what they would like to discuss about it."
 };
