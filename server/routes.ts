@@ -1296,9 +1296,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: JSON.stringify({ topic: topic.trim() }),
         signal: controller.signal,
       });
-      clearTimeout(timeoutId);
 
       const data = (await upstream.json().catch(() => ({}))) as any;
+      clearTimeout(timeoutId);
       if (upstream.status === 202) {
         const { task_id, status, current_step, links } = data;
         return res.status(202).json({ task_id, status, current_step, links });
