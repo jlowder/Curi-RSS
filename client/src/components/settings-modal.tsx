@@ -372,6 +372,30 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                         />
                         <Label htmlFor="deepResearchEnabled">Enable Deep Research</Label>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="deepReachEnabled"
+                          checked={llmConfig.deepReachEnabled}
+                          onCheckedChange={(checked) => {
+                            handleLlmBooleanChange('deepReachEnabled', !!checked);
+                            if (checked && !(llmConfig.deepReachEndpoint || "").trim()) {
+                              setLlmConfig((prev) => ({ ...prev, deepReachEndpoint: "http://localhost:8320" }));
+                            }
+                          }}
+                        />
+                        <Label htmlFor="deepReachEnabled">Use Deep Reach</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="deepReachEndpoint">Deep Reach Endpoint</Label>
+                        <Input
+                          id="deepReachEndpoint"
+                          value={llmConfig.deepReachEndpoint || ""}
+                          onChange={handleLlmChange}
+                          placeholder="http://localhost:8320"
+                          disabled={!llmConfig.deepReachEnabled}
+                          className={llmConfig.deepReachEnabled ? "" : "opacity-50 cursor-not-allowed"}
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="deepResearchPrompt">Prompt Template</Label>
                         <Textarea
