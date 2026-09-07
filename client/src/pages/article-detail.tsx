@@ -22,6 +22,7 @@ import {
   FlaskConical,
   MessageSquare,
   ShieldAlert,
+  Rocket,
 } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
@@ -32,6 +33,21 @@ import { useState } from "react";
 import { FormattedMarkdown } from "@/components/formatted-markdown";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { AiChatSection } from "@/components/ai-chat-section";
+
+function parseDeepResearchQuestions(markdown: string): string[] {
+  return markdown
+    .split("\n")
+    .map((line) => line.match(/^\s*(?:[-*+]|\d+[.)])\s+(.*)/)?.[1] ?? "")
+    .map((q) =>
+      q
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+        .replace(/(\*\*|__)(.*?)\1/g, "$2")
+        .replace(/(\*|_)(.*?)\1/g, "$2")
+        .replace(/`/g, "")
+        .trim(),
+    )
+    .filter((q) => q.length > 0);
+}
 
 interface ArticleDetailProps {}
 
@@ -44,6 +60,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   const [deepResearch, setDeepResearch] = useState<string | null>(null);
   const [counterpoints, setCounterpoints] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
+  const [deepReachPending, setDeepReachPending] = useState<Record<number, boolean>>({});
 
   const {
     data: article,
@@ -190,6 +207,33 @@ export default function ArticleDetail({}: ArticleDetailProps) {
     },
   });
 
+  const handleDeepReach = async (index: number, question: string) => {
+    setDeepReachPending((prev) => ({ ...prev, [index]: true }));
+    try {
+      const response = await fetch("/api/deep-reach/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: question }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Deep Reach returned ${response.status}`);
+      }
+      toast({
+        title: "Deep Reach research started",
+        description: `Task ${data.task_id} is ${data.status === "pending" ? "queued" : "running"}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Deep Reach Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeepReachPending((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
   // Mark article as read after viewing for a few seconds (if not already read)
   useEffect(() => {
     if (
@@ -296,6 +340,7 @@ export default function ArticleDetail({}: ArticleDetailProps) {
   };
 
   const hasContent = article.content && article.content.length > 100;
+  const questions = deepResearch ? parseDeepResearchQuestions(deepResearch) : [];
 
   return (
     <div className="h-screen overflow-y-auto bg-gray-950 text-gray-100">
@@ -566,7 +611,33 @@ export default function ArticleDetail({}: ArticleDetailProps) {
                     title="Deep Research Prompts"
                     icon={<FlaskConical className="w-5 h-5 text-green-400" />}
                   >
-                    <FormattedMarkdown content={deepResearch} />
+                    {questions.length > 0 ? (
+                      <div className="space-y-1">
+                        {questions.map((q, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start justify-between gap-3 py-1"
+                          >
+                            <span className="text-sm text-gray-300">{q}</span>
+                            {llmConfig?.deepReachEnabled &&
+                            llmConfig?.deepReachEndpoint ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+                                disabled={!!deepReachPending[i]}
+                                onClick={() => handleDeepReach(i, q)}
+                              >
+                                <Rocket className="w-4 h-4 mr-2" />
+                                {deepReachPending[i] ? "Starting..." : "Deep Reach"}
+                              </Button>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <FormattedMarkdown content={deepResearch} />
+                    )}
                   </CollapsibleSection>
                 </div>
               )}
