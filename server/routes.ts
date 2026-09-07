@@ -1264,6 +1264,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/deep-reach/research", async (req, res) => {
+    let base = "";
+    try {
+      const { topic } = req.body ?? {};
+      if (typeof topic !== "string" || topic.trim() === "") {
+        return res.status(400).json({ error: "topic is required" });
+      }
+
+      const llmConfig = await storage.getLlmConfig();
+      if (!llmConfig.deepReachEnabled) {
+        return res.status(400).json({
+          error: "Deep Reach is not enabled. Enable it in Settings → LLM → Deep Research.",
+        });
+      }
+
+      base = (llmConfig.deepReachEndpoint || "").trim().replace(/\/+$/, "");
+      if (!base) {
+        return res.status(400).json({
+          error: "Deep Reach endpoint is not configured. Set it in Settings → LLM → Deep Research.",
+        });
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const upstream = await fetch(`${base}/research`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic: topic.trim() }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      const data = (await upstream.json().catch(() => ({}))) as any;
+      if (upstream.status === 202) {
+        const { task_id, status, current_step, links } = data;
+        return res.status(202).json({ task_id, status, current_step, links });
+      }
+      return res.status(upstream.status).json({
+        ...data,
+        error: data.error || `Deep Reach returned ${upstream.status}`,
+      });
+    } catch (error: any) {
+      console.error("Deep reach error:", error);
+      res.status(502).json({
+        error: `Failed to reach Deep Reach at ${base}: ${error.message}`,
+      });
+    }
+  });
+
   app.post("/api/articles/:id/counterpoints", async (req, res) => {
     try {
       const llmConfig = await storage.getLlmConfig();
